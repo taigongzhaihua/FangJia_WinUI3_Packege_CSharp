@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35617.110
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FangJia", "FangJia(pakeged)\FangJia.csproj", "{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|ARM64.Build.0 = Debug|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x64.ActiveCfg = Debug|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x64.Build.0 = Debug|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x64.Deploy.0 = Debug|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x86.ActiveCfg = Debug|x86
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x86.Build.0 = Debug|x86
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Debug|x86.Deploy.0 = Debug|x86
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|ARM64.ActiveCfg = Release|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|ARM64.Build.0 = Release|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|ARM64.Deploy.0 = Release|ARM64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x64.ActiveCfg = Release|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x64.Build.0 = Release|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x64.Deploy.0 = Release|x64
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.ActiveCfg = Release|x86
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.Build.0 = Release|x86
+		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.Deploy.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B34BE187-316D-4E33-8A6C-412ACA6F74A0}
+	EndGlobalSection
+EndGlobal

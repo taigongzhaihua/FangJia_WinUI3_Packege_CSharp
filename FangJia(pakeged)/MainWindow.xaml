@@ -1,0 +1,184 @@
+<?xml version="1.0"
+      encoding="utf-8"?>
+
+<!-- ReSharper disable UnusedMember.Local -->
+<Window x:Class="FangJia.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+        xmlns:converter="using:FangJia.Converters"
+        xmlns:common="using:FangJia.Common"
+        mc:Ignorable="d"
+        Title="方家">
+    <Window.Content>
+        <Grid x:Name="MainGrid"
+              ActualThemeChanged="MainGrid_OnActualThemeChanged">
+            <Grid.Resources>
+                <common:MenuItemTemplateSelector x:Key="Selector">
+                    <common:MenuItemTemplateSelector.ItemTemplate>
+                        <DataTemplate x:DataType="common:Category">
+                            <NavigationViewItem
+                                Content="{x:Bind Name}"
+                                ToolTipService.ToolTip="{x:Bind Tooltip}"
+                                Tag="{x:Bind Path}"
+                                MenuItemsSource="{x:Bind Children}">
+                                <NavigationViewItem.Icon>
+                                    <FontIcon Glyph="{x:Bind Glyph}"></FontIcon>
+                                </NavigationViewItem.Icon>
+                            </NavigationViewItem>
+                        </DataTemplate>
+                    </common:MenuItemTemplateSelector.ItemTemplate>
+                </common:MenuItemTemplateSelector>
+                <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+                <converter:BoolToNavigateBackVisible x:Key="BoolToNavigateBackVisible"/>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+
+            <Grid x:Name="AppTitleBar"
+                  Grid.Column="1"
+                  Height="{Binding ElementName=NavigationViewControl, Path=CompactPaneLength}"
+                  Margin="48,0,0,0"
+                  VerticalAlignment="Stretch"
+                  AutomationProperties.AutomationId="AppTitleBar"
+                  Canvas.ZIndex="1"
+                  IsHitTestVisible="True">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="LeftPaddingColumn"
+                                      Width="0" />
+                    <ColumnDefinition x:Name="IconColumn"
+                                      Width="Auto" />
+                    <ColumnDefinition x:Name="TitleColumn"
+                                      Width="Auto" />
+                    <ColumnDefinition x:Name="LeftDragColumn"
+                                      Width="*" />
+                    <ColumnDefinition x:Name="RightDragColumn"
+                                      Width="*" />
+                    <ColumnDefinition x:Name="AccountColumn"
+                                      Width="Auto" />
+                    <ColumnDefinition x:Name="FullScreenColumn"
+                                      Width="Auto" />
+                    <ColumnDefinition x:Name="RightPaddingColumn"
+                                      Width="0" />
+                </Grid.ColumnDefinitions>
+
+                <Image x:Name="TitleBarIcon"
+                       
+                       Grid.Column="1"
+                       Height="24"
+                       Margin="8,0,4,0"
+                       VerticalAlignment="Center">
+                    <Image.Source>
+                        <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.svg" />
+                    </Image.Source>
+                </Image>
+
+                <TextBlock x:Name="TitleBarTextBlock"
+                           Text="App title"
+                           FontSize="16"
+                           FontWeight="Medium"
+                           Margin="8,0,0,0"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           Style="{ThemeResource BodyTextBlockStyle}"/>
+                <PersonPicture x:Name="PersonPic"
+                               Grid.Column="5"
+                               Height="32"
+                               Margin="0,0,16,0"
+                               ToolTipService.ToolTip="用户" />
+                <Button Grid.Column="6"
+                        Click="FullScreen"
+                        x:Name="FullScreenButton"
+                        ToolTipService.ToolTip="全屏">
+                    <FontIcon Glyph="&#xE740;" FontSize="10" />
+                </Button>
+            </Grid>
+
+            <NavigationView x:Name="NavigationViewControl" Grid.Row="0" Grid.RowSpan="2"
+                            IsBackButtonVisible="Auto"
+                            IsPaneToggleButtonVisible="True"
+                            IsSettingsVisible="True"
+                            IsTitleBarAutoPaddingEnabled="False"
+                            IsTabStop="False"
+                            SelectionChanged="NavigationView_SelectionChanged"
+                            Loaded="NavigationView_Loaded"
+                            Grid.Column="0" Grid.ColumnSpan="2"
+                            DisplayModeChanged="OnPaneDisplayModeChanged"
+                            IsPaneOpen="False"
+                            IsBackEnabled="{Binding ElementName=ContentFrame,Path=CanGoBack}"
+                            BackRequested="NavigationViewControl_OnBackRequested"
+                            MenuItemsSource="{x:Bind ViewModel.MenuFolders, Mode=OneWay}"
+                            FooterMenuItemsSource="{x:Bind ViewModel.FootFolders, Mode=OneWay}"
+                            MenuItemTemplateSelector="{StaticResource Selector}">
+                <NavigationView.Resources>
+                    <!-- ReSharper disable Xaml.RedundantResource -->
+                    <!--  This top margin is the height of the custom titleBar  -->
+
+                    <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
+                    <Thickness x:Key="NavigationViewMinimalContentMargin">0,48,0,0</Thickness>
+                    <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,0,0</Thickness>
+                    <Thickness x:Key="NavigationViewHeaderMargin">24,32,0,12</Thickness>
+                    <Thickness x:Key="NavigationViewMinimalHeaderMargin">-48,32,0,12</Thickness>
+                    <!--  This is the rounded corner on the Top left of the L Pattern  -->
+                    <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,0</CornerRadius>
+
+
+                    <!-- ReSharper restore Xaml.RedundantResource -->
+                </NavigationView.Resources>
+                <NavigationView.AutoSuggestBox>
+                    <AutoSuggestBox
+                        x:Name="ControlsSearchBox"
+                        MinWidth="200"
+                        VerticalAlignment="Center"
+                        x:FieldModifier="public"
+                        KeyboardAcceleratorPlacementMode="Hidden"
+                        PlaceholderText="Search"
+                        QueryIcon="Find">
+                        <AutoSuggestBox.KeyboardAccelerators>
+                            <KeyboardAccelerator
+                                Key="F"
+                                Modifiers="Control" />
+                        </AutoSuggestBox.KeyboardAccelerators>
+                    </AutoSuggestBox>
+                </NavigationView.AutoSuggestBox>
+                <NavigationView.Header>
+                    <Grid>
+                        <BreadcrumbBar x:Name="PageTitleBreadcrumbBar"
+                                       ItemsSource="{x:Bind ViewModel.PageHeader,Mode=TwoWay}"
+                                       ItemClicked="BreadcrumbBar2_ItemClicked"
+                                       VerticalAlignment="Center"
+                                       BackgroundSizing="InnerBorderEdge"
+                                       CharacterSpacing="20"
+                                       >
+                            <BreadcrumbBar.ItemTemplate>
+                                <DataTemplate x:DataType="common:Category">
+                                    <BreadcrumbBarItem Content="{Binding}" AutomationProperties.Name="{Binding Name}"
+                                                       VerticalAlignment="Center">
+                                        <BreadcrumbBarItem.ContentTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}"
+                                                           Style="{ThemeResource TitleTextBlockStyle}"
+                                                           VerticalAlignment="Center" />
+                                            </DataTemplate>
+                                        </BreadcrumbBarItem.ContentTemplate>
+                                    </BreadcrumbBarItem>
+                                </DataTemplate>
+                            </BreadcrumbBar.ItemTemplate>
+                        </BreadcrumbBar>
+                    </Grid>
+                </NavigationView.Header>
+                <Frame x:Name="ContentFrame" />
+            </NavigationView>
+        </Grid>
+    </Window.Content>
+</Window>
+<!-- ReSharper restore UnusedMember.Local -->

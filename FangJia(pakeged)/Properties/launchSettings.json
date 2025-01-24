@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FangJia(pakeged) (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "FangJia(pakeged) (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

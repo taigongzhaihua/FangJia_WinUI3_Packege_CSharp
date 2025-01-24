@@ -1,0 +1,161 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<RootNamespace>FangJia</RootNamespace>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<Platforms>x86;x64;ARM64</Platforms>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
+		<UseWinUI>true</UseWinUI>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<Nullable>enable</Nullable>
+		<Nullable>enable</Nullable>
+		<NoWarn>
+			0108;   <!-- 'x' hides inherited member 'y'. Use the new keyword if hiding was intended. -->
+			8305;    <!-- 'x' is for evaluation purposes only and is subject to change or removal in future updates. -->
+			NU1701;
+			IDE0079;
+			NU1702;
+			MVVMTK0045;
+
+		</NoWarn>
+		<MSBuildWarningsAsMessages>
+			WMC1501 <!-- x is for evaluation purposes only and is subject to change or removal in future updates. -->
+		</MSBuildWarningsAsMessages>
+	</PropertyGroup>
+	<ItemGroup>
+		<Content Remove="Assets\StoreLogo.ai" />
+		<Content Remove="Assets\StoreLogo.ico" />
+		<Content Remove="Assets\StoreLogo.scale-100.png" />
+		<Content Remove="Assets\StoreLogo.scale-125.png" />
+		<Content Remove="Assets\StoreLogo.scale-150.png" />
+		<Content Remove="Assets\StoreLogo.scale-200.png" />
+		<Content Remove="Assets\StoreLogo.scale-400.png" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\BadgeLogo.scale-100.png" />
+		<None Remove="Assets\BadgeLogo.scale-125.png" />
+		<None Remove="Assets\BadgeLogo.scale-150.png" />
+		<None Remove="Assets\BadgeLogo.scale-200.png" />
+		<None Remove="Assets\BadgeLogo.scale-400.png" />
+		<None Remove="Assets\StoreLogo.svg" />
+		<None Remove="Pages\AboutPage.xaml" />
+		<None Remove="Pages\DataPage.xaml" />
+		<None Remove="Pages\Data\CasePage.xaml" />
+		<None Remove="Pages\Data\ClassicPage.xaml" />
+		<None Remove="Pages\Data\DrugPage.xaml" />
+		<None Remove="Pages\Data\FormulationPage.xaml" />
+		<None Remove="Pages\HomePage.xaml" />
+		<None Remove="Pages\SettingsPage.xaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="Assets\SplashScreen.scale-200.png" />
+		<Content Include="Assets\LockScreenLogo.scale-200.png" />
+		<Content Include="Assets\Square150x150Logo.scale-200.png" />
+		<Content Include="Assets\Square44x44Logo.scale-200.png" />
+		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Manifest Include="$(ApplicationManifest)" />
+	</ItemGroup>
+
+	<!--
+    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
+    Tools extension to be activated for this project even if the Windows App SDK Nuget
+    package has not yet been restored.
+  -->
+	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+		<ProjectCapability Include="Msix" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.241112-preview1" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2792.45" />
+		<PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250109001-experimental2" />
+		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="Unity" Version="5.11.10" />
+		<PackageReference Include="WinUIEx" Version="2.5.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\Data\CasePage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\Data\ClassicPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\Data\FormulationPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\Data\DrugPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\SettingsPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\AboutPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\DataPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Page Update="Pages\HomePage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+
+	<!--
+    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
+    Explorer "Package and Publish" context menu entry to be enabled for this project even if
+    the Windows App SDK Nuget package has not yet been restored.
+  -->
+	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+	</PropertyGroup>
+
+	<!-- Publish Properties -->
+	<PropertyGroup>
+		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
+		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+		<DefaultLanguage>zh-cn</DefaultLanguage>
+		<PackageCertificateThumbprint>1E760F9099FF5CB255FC1222D5927825309EF504</PackageCertificateThumbprint>
+		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+		<GenerateAppInstallerFile>True</GenerateAppInstallerFile>
+		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+		<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+		<GenerateTestArtifacts>True</GenerateTestArtifacts>
+		<AppxBundle>Never</AppxBundle>
+		<AppInstallerUri>C:\Users\zzy94\source\repos\FangJia%28pakeged%29\FangJia%28pakeged%29\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppPackages\</AppInstallerUri>
+		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+	</PropertyGroup>
+</Project>
