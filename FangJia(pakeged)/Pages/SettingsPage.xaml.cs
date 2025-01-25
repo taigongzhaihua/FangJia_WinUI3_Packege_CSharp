@@ -48,4 +48,9 @@ public sealed partial class SettingsPage
         UiHelper.AnnounceActionForAccessibility(sender as UIElement, $"Theme changed to {color}",
             "ThemeChangedNotificationActivityId");
     }
+
+    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+    {
+        PipeHelper.RestartApp();
+    }
 }

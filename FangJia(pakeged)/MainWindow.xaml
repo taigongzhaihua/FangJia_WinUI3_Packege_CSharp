@@ -101,9 +101,6 @@
                         ToolTipService.ToolTip="全屏">
                     <FontIcon Glyph="&#xE740;" FontSize="10" />
                 </Button>
-                <Button Grid.Column="7" 
-                        Click="ButtonBase_OnClick"
-                        Content="重启"/>
             </Grid>
 
             <NavigationView x:Name="NavigationViewControl" Grid.Row="0" Grid.RowSpan="2"
@@ -179,6 +176,7 @@
                         </BreadcrumbBar>
                     </Grid>
                 </NavigationView.Header>
+                
                 <Frame x:Name="ContentFrame" />
             </NavigationView>
         </Grid>

@@ -337,8 +337,4 @@ public sealed partial class MainWindow
         TitleBarHelper.ApplySystemThemeToCaptionButtons(this);
     }
 
-    private void ButtonBase_OnClick(object _, RoutedEventArgs __)
-    {
-        PipeHelper.RestartApp();
-    }
 }

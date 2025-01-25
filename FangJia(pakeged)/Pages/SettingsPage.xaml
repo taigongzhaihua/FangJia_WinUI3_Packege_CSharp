@@ -41,6 +41,16 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch IsOn="{x:Bind ViewModel.IsMicaTheme,Mode=TwoWay}"/>
             </controls:SettingsCard>
+            <TextBlock Text="应用" Margin="0,12" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+            <controls:SettingsCard CornerRadius="8"
+                                   Description="重新启动应用" Header="重启应用"
+                                   IsActionIconVisible="False"
+                                   IsClickEnabled="True"
+                                   Click="ButtonBase_OnClick">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE72C;" />
+                </controls:SettingsCard.HeaderIcon>
+            </controls:SettingsCard>
         </StackPanel>
     </Grid>
 </Page>

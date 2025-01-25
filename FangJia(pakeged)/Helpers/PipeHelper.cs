@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using WinRT.Interop;
@@ -19,7 +20,7 @@ namespace FangJia.Helpers
         public static void StartApp(string mode)
         {
             var connected = false;
-            var retries = 3;
+            var retries = 20;
 
             while (!connected && retries > 0)
             {
@@ -117,6 +118,7 @@ namespace FangJia.Helpers
                             Logger.Info("接收到 SHOW 消息，准备显示主窗口。");
                             Console.WriteLine(@"接收到 SHOW 消息，准备显示主窗口。");
                             ShowMainWindow();
+                            ClearStaleProcesses("FangJia");
                             break;
                         case "RESTART":
                             Logger.Info("接收到 RESTART 消息，关闭当前实例，以应用新实例。");
@@ -154,7 +156,33 @@ namespace FangJia.Helpers
                 Logger.Error($"停止管道服务器时发生异常：{ex.Message}", ex);
             }
         }
+        public static void ClearStaleProcesses(string processName)
+        {
+            try
+            {
+                var currentProcess = Process.GetCurrentProcess();
+                var staleProcesses = Process.GetProcessesByName(processName)
+                    .Where(p => p.Id != currentProcess.Id); // 排除当前进程
 
+                foreach (var process in staleProcesses)
+                {
+                    try
+                    {
+                        process.Kill(); // 强制终止进程
+                        process.WaitForExit(); // 等待进程退出
+                        Console.WriteLine($@"已终止残留进程: {process.Id}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($@"无法终止进程 {process.Id}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($@"清除残留进程时发生异常: {ex.Message}");
+            }
+        }
         private static void ShowMainWindow()
         {
             if (App.MainDispatcherQueue != null)

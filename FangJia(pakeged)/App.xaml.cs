@@ -29,7 +29,7 @@ public partial class App
     /// 互斥体的名称，用于标识应用程序的唯一实例。
     /// </summary>
     private const string MutexName = "FangJia";
-
+    private static Mutex? _mutex;
     /// <summary>
     /// 初始化单例应用程序对象。这是执行的第一行编写代码，因此是 main() 或 WinMain() 的逻辑等效项。
     /// </summary>
@@ -60,20 +60,19 @@ public partial class App
         WindowHelper.TrackWindow(Window);
         // 步骤2：检查是否已经有一个实例在运行
         // 创建一个命名互斥体，以确保只有一个应用程序实例在运行。
-        var mutex = new Mutex(true, MutexName, out var createdNew);
+        _mutex = new Mutex(true, MutexName, out var createdNew);
         if (!createdNew)
         {
             // 如果互斥体已经存在，则说明已经有一个实例在运行。
             Logger.Warn("检测到已有实例正在运行，通知已存在的实例");
-            PipeHelper.StartApp("SHOW"); // 通知已运行的实例激活主窗口。
-            Exit(); // 关闭当前实例。
+            PipeHelper.StartApp("SHOW");
+            Window.Close();
             return;
         }
 
         // 步骤3：启动管道服务端，用于接收来自其他实例的消息。
         Task.Run(PipeHelper.StartPipeServer); // 启动管道服务端
         PipeHelper.StartApp("SHOW");
-        // Window.Activate();
         ThemeHelper.Initialize();
         TitleBarHelper.ApplySystemThemeToCaptionButtons(Window);
     }

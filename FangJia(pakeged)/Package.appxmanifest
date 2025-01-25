@@ -11,7 +11,7 @@
   <Identity
     Name="6f350eec-9e07-4e90-ac7c-0dbd103f96d3"
     Publisher="CN=太公摘花"
-    Version="1.0.3.0" />
+    Version="1.0.4.0" />
 
   <mp:PhoneIdentity PhoneProductId="6f350eec-9e07-4e90-ac7c-0dbd103f96d3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
