@@ -93,7 +93,7 @@ public sealed partial class MainWindow
                     }
                     else if (!string.IsNullOrWhiteSpace(selectedPath) && !type.Contains(selectedPath))
                     {
-                        NavigationViewControl.SelectedItem = Helper.Categorizes[type.Replace("Page", "")];
+                        NavigationViewControl.SelectedItem = NavigationHelper.Categorizes[type.Replace("Page", "")];
                     }
 
                     break;
@@ -102,7 +102,7 @@ public sealed partial class MainWindow
                 {
                     if (!type.Contains("SettingsPage"))
                     {
-                        NavigationViewControl.SelectedItem = Helper.Categorizes[type.Replace("Page", "")];
+                        NavigationViewControl.SelectedItem = NavigationHelper.Categorizes[type.Replace("Page", "")];
                     }
 
                     break;
@@ -113,32 +113,32 @@ public sealed partial class MainWindow
         switch (type)
         {
             case "HomePage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Home"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Home"] as Category)!);
                 break;
             case "DataPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Data"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Data"] as Category)!);
                 break;
             case "AboutPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["About"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["About"] as Category)!);
                 break;
             case "FormulationPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Data"] as Category)!);
-                ViewModel.PageHeader.Add((Helper.Categorizes["Formulation"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Data"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Formulation"] as Category)!);
                 break;
             case "DrugPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Data"] as Category)!);
-                ViewModel.PageHeader.Add((Helper.Categorizes["Drug"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Data"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Drug"] as Category)!);
                 break;
             case "ClassicPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Data"] as Category)!);
-                ViewModel.PageHeader.Add((Helper.Categorizes["Classic"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Data"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Classic"] as Category)!);
                 break;
             case "CasePage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Data"] as Category)!);
-                ViewModel.PageHeader.Add((Helper.Categorizes["Case"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Data"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Case"] as Category)!);
                 break;
             case "SettingsPage":
-                ViewModel.PageHeader.Add((Helper.Categorizes["Settings"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Settings"] as Category)!);
                 break;
         }
     }
@@ -262,14 +262,14 @@ public sealed partial class MainWindow
     {
         if (args.IsSettingsSelected)
         {
-            if (ContentFrame.CurrentSourcePageType == Helper.GetType("SettingsPage")) return;
+            if (ContentFrame.CurrentSourcePageType == NavigationHelper.GetType("SettingsPage")) return;
             ContentFrame.Navigate(typeof(SettingsPage));
             return;
         }
         if (args.SelectedItem is not Category selectedCategory) return;
         var path = selectedCategory.Path;
         if (string.IsNullOrEmpty(path)) return;
-        var type = Helper.GetType(path);
+        var type = NavigationHelper.GetType(path);
         if (ContentFrame.CurrentSourcePageType == type) return;
         ContentFrame.Navigate(type);
     }
@@ -279,7 +279,7 @@ public sealed partial class MainWindow
     {
         if (sender is NavigationView navigationView)
         {
-            navigationView.SelectedItem = Helper.Categorizes["Home"];
+            navigationView.SelectedItem = NavigationHelper.Categorizes["Home"];
         }
     }
     // 切换窗口显示模式
@@ -315,7 +315,7 @@ public sealed partial class MainWindow
             items.RemoveAt(i);
         }
 
-        ContentFrame.Navigate(Helper.GetType(items[args.Index].Path));
+        ContentFrame.Navigate(NavigationHelper.GetType(items[args.Index].Path));
     }
 
     private void NavigationViewControl_OnBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
@@ -337,4 +337,8 @@ public sealed partial class MainWindow
         TitleBarHelper.ApplySystemThemeToCaptionButtons(this);
     }
 
+    private void ButtonBase_OnClick(object _, RoutedEventArgs __)
+    {
+        PipeHelper.RestartApp();
+    }
 }

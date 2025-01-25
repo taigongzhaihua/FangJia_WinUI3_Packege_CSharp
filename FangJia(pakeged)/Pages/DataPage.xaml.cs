@@ -25,14 +25,14 @@ namespace FangJia.Pages
         // private void Collection_OnItemClick(object sender, ItemClickEventArgs e)
         // {
         //     if (e.ClickedItem is not Category item) return;
-        //     Frame.Navigate(Helper.GetType(item.Path));
+        //     Frame.Navigate(NavigationHelper.GetType(item.Path));
         // }
 
         private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
         {
             if (sender is SettingsCard card)
             {
-                Frame.Navigate(Helper.GetType(card.Tag.ToString()));
+                Frame.Navigate(NavigationHelper.GetType(card.Tag.ToString()));
             }
         }
     }

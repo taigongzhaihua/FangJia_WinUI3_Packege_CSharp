@@ -119,14 +119,11 @@
   </resheader>
   <data name="AppDescription" xml:space="preserve">
     <value>方家是一款辅助背诵方歌的应用，能够帮助中医人更好的将方、药、经典、医案联系起来，让知识不再孤立。</value>
-    <comment>方家是一款辅助背诵方歌的应用，能够帮助中医人更好的将方、药、经典、医案联系起来，让知识不再孤立。</comment>
   </data>
   <data name="EMail" xml:space="preserve">
     <value>taigongzhaihua@qq.vip.com</value>
-    <comment>邮箱</comment>
   </data>
   <data name="GithubUri" xml:space="preserve">
     <value>https://github.com/taigongzhaihua/FangJia_WinUI3_Pakege_CSharp.git</value>
-    <comment>github地址</comment>
   </data>
 </root>

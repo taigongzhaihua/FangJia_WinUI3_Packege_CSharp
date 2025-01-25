@@ -11,7 +11,8 @@
 		<UseWinUI>true</UseWinUI>
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<Nullable>enable</Nullable>
-		<Nullable>enable</Nullable>
+				<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<NoWarn>
 			0108;   <!-- 'x' hides inherited member 'y'. Use the new keyword if hiding was intended. -->
 			8305;    <!-- 'x' is for evaluation purposes only and is subject to change or removal in future updates. -->
@@ -41,6 +42,7 @@
 		<None Remove="Assets\BadgeLogo.scale-200.png" />
 		<None Remove="Assets\BadgeLogo.scale-400.png" />
 		<None Remove="Assets\StoreLogo.svg" />
+		<None Remove="Nlog.config" />
 		<None Remove="Pages\AboutPage.xaml" />
 		<None Remove="Pages\DataPage.xaml" />
 		<None Remove="Pages\Data\CasePage.xaml" />
@@ -86,9 +88,20 @@
 		<PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250109001-experimental2" />
+		<PackageReference Include="NLog" Version="5.3.4" />
 		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
 		<PackageReference Include="Unity" Version="5.11.10" />
 		<PackageReference Include="WinUIEx" Version="2.5.1" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Nlog.config">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resource.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	  </EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 		<Page Update="Pages\Data\CasePage.xaml">

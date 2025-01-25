@@ -10,7 +10,7 @@ namespace FangJia.Pages
     {
         public FormulationPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
     }
 }

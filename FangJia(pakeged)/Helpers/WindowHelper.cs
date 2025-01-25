@@ -21,7 +21,7 @@ using WinRT.Interop;
 
 namespace FangJia.Helpers
 {
-    // Helper class to allow the app to find the Window that contains an
+    // NavigationHelper class to allow the app to find the Window that contains an
     // arbitrary UIElement (GetWindowForElement).  To do this, we keep track
     // of all active Windows.  The app code must call WindowHelper.CreateWindow
     // rather than "new Window" so we can keep track of all the relevant
