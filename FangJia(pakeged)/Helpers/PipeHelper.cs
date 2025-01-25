@@ -197,8 +197,9 @@ namespace FangJia.Helpers
 
                     App.Window.Activate();
                     var appWindow = WindowHelper.GetAppWindow(App.Window);
-                    appWindow.Show();
+
                     SetForegroundWindow(WindowNative.GetWindowHandle(App.Window));
+                    appWindow.Show();
                 });
             }
             else
