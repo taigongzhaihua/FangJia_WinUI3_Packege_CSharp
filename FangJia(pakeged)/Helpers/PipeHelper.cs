@@ -156,6 +156,7 @@ namespace FangJia.Helpers
                 Logger.Error($"停止管道服务器时发生异常：{ex.Message}", ex);
             }
         }
+
         public static void ClearStaleProcesses(string processName)
         {
             try
@@ -183,6 +184,7 @@ namespace FangJia.Helpers
                 Console.WriteLine($@"清除残留进程时发生异常: {ex.Message}");
             }
         }
+
         private static void ShowMainWindow()
         {
             if (App.MainDispatcherQueue != null)
@@ -195,11 +197,12 @@ namespace FangJia.Helpers
                         return;
                     }
 
-                    App.Window.Activate();
+                    SetForegroundWindow(WindowNative.GetWindowHandle(App.Window));
+
                     var appWindow = WindowHelper.GetAppWindow(App.Window);
 
-                    SetForegroundWindow(WindowNative.GetWindowHandle(App.Window));
                     appWindow.Show();
+                    App.Window.Activate();
                 });
             }
             else

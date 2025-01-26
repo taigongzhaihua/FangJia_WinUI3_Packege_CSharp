@@ -1,9 +1,11 @@
 ﻿using FangJia.Helpers;
 using FangJia.ViewModel;
+using Microsoft.Data.Sqlite;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using NLog;
 using System;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,7 +68,7 @@ public partial class App
             // 如果互斥体已经存在，则说明已经有一个实例在运行。
             Logger.Warn("检测到已有实例正在运行，通知已存在的实例");
             PipeHelper.StartApp("SHOW");
-            Window.Close();
+            Exit();
             return;
         }
 
@@ -75,6 +77,54 @@ public partial class App
         PipeHelper.StartApp("SHOW");
         ThemeHelper.Initialize();
         TitleBarHelper.ApplySystemThemeToCaptionButtons(Window);
+
+        // 数据库文件路径
+        var databasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "database.db");
+
+        // 检查文件是否存在
+        if (!File.Exists(databasePath))
+        {
+            Logger.Info(@"Database file not found. Creating new database...");
+
+            // 创建数据库文件并初始化表
+            CreateDatabaseAndTable(databasePath);
+
+            Logger.Info(@"Database file and Logs table created successfully.");
+        }
+        else
+        {
+            Logger.Info(@"Database file already exists.");
+        }
+
+    }
+
+    private static void CreateDatabaseAndTable(string databasePath)
+    {
+        // SQLite 连接字符串
+        var connectionString = $"Data Source=\"{databasePath}\";";
+
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? string.Empty);
+
+        using var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        var command = connection.CreateCommand();
+
+        // 创建表的 SQL 语句
+        command.CommandText = """
+                              
+                                              CREATE TABLE IF NOT EXISTS Logs (
+                                                  TimestampUtc TEXT NOT NULL,
+                                                  Application TEXT NOT NULL,
+                                                  Level TEXT NOT NULL,
+                                                  Message TEXT NOT NULL,
+                                                  Exception TEXT,
+                                                  Logger TEXT,
+                                                  EventId INTEGER DEFAULT 0
+                                              )
+                              """;
+
+
+        command.ExecuteNonQuery();
     }
 
     private static void RegisterServices(UnityContainer container)
@@ -94,5 +144,11 @@ public partial class App
         }
 
         return (TEnum)Enum.Parse(typeof(TEnum), text!);
+    }
+
+    ~App()
+    {
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
     }
 }
