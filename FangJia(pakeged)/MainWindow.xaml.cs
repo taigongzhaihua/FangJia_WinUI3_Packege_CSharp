@@ -140,6 +140,10 @@ public sealed partial class MainWindow
             case "SettingsPage":
                 ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Settings"] as Category)!);
                 break;
+            case "LogsPage":
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Settings"] as Category)!);
+                ViewModel.PageHeader.Add((NavigationHelper.Categorizes["Logs"] as Category)!);
+                break;
         }
     }
 

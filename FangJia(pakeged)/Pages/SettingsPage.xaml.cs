@@ -1,6 +1,7 @@
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
+using CommunityToolkit.WinUI.Controls;
 using FangJia.Helpers;
 using FangJia.ViewModel;
 using Microsoft.UI;
@@ -52,5 +53,13 @@ public sealed partial class SettingsPage
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
     {
         PipeHelper.RestartApp();
+    }
+
+    private void ButtonLog_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is SettingsCard card)
+        {
+            Frame.Navigate(NavigationHelper.GetType(card.Tag.ToString()));
+        }
     }
 }

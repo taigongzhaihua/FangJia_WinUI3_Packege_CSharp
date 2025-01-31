@@ -11,10 +11,10 @@
     Background="{ThemeResource  ControlAltFillColorTransparentBrush}"
     NavigationCacheMode="Enabled">
 
-    <Grid>
+    <ScrollView>
         <StackPanel Margin="24">
             <TextBlock Text="外观"
-                       Style="{ThemeResource BodyStrongTextBlockStyle}"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"
                        Margin="0,12"/>
             <controls:SettingsCard Description="选择应用主题" Header="应用主题"
                                    CornerRadius="8,8,0,0"
@@ -41,7 +41,35 @@
                 </controls:SettingsCard.HeaderIcon>
                 <ToggleSwitch IsOn="{x:Bind ViewModel.IsMicaTheme,Mode=TwoWay}"/>
             </controls:SettingsCard>
-            <TextBlock Text="应用" Margin="0,12" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+            <TextBlock Text="日志" Margin="0,12" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+            <controls:SettingsCard CornerRadius="8,8,0,0"
+                                   Description="选择日志记录的级别，默认为日常" Header="日志级别"
+                                   IsActionIconVisible="False"
+                                   IsClickEnabled="False">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8C4;" />
+                </controls:SettingsCard.HeaderIcon>
+                <ComboBox
+                    x:Name="LogLevel"
+                    AutomationProperties.AutomationId="themeModeComboBox"
+                    SelectedValuePath="Tag"
+                    SelectedValue="{x:Bind ViewModel.LogWriteLevel,Mode=TwoWay}">
+                    <ComboBoxItem Content="调试" Tag="Debug" />
+                    <ComboBoxItem Content="日常" Tag="Info" />
+                    <ComboBoxItem Content="警告" Tag="Warn" />
+                </ComboBox>
+            </controls:SettingsCard>
+            <controls:SettingsCard CornerRadius="0,0,8,8"
+                                   Description="查看日志详情" Header="日志详情"
+                                   IsActionIconVisible="True"
+                                   IsClickEnabled="True"
+                                   Click="ButtonLog_OnClick"
+                                   Tag="LogsPage">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xF000;" />
+                </controls:SettingsCard.HeaderIcon>
+            </controls:SettingsCard>
+            <TextBlock Text="应用" Margin="0,12" Style="{ThemeResource SubtitleTextBlockStyle}"/>
             <controls:SettingsCard CornerRadius="8"
                                    Description="重新启动应用" Header="重启应用"
                                    IsActionIconVisible="False"
@@ -52,5 +80,5 @@
                 </controls:SettingsCard.HeaderIcon>
             </controls:SettingsCard>
         </StackPanel>
-    </Grid>
+    </ScrollView>
 </Page>

@@ -1,11 +1,9 @@
 ﻿using FangJia.Helpers;
 using FangJia.ViewModel;
-using Microsoft.Data.Sqlite;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using NLog;
 using System;
-using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,12 +24,21 @@ public partial class App
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// 获取主线程的 DispatcherQueue。
+    /// </summary>
     public static DispatcherQueue? MainDispatcherQueue { get; private set; }
+
     /// <summary>
     /// 互斥体的名称，用于标识应用程序的唯一实例。
     /// </summary>
     private const string MutexName = "FangJia";
+
+    /// <summary>
+    /// 互斥体，用于确保只有一个应用程序实例在运行。
+    /// </summary>
     private static Mutex? _mutex;
+
     /// <summary>
     /// 初始化单例应用程序对象。这是执行的第一行编写代码，因此是 main() 或 WinMain() 的逻辑等效项。
     /// </summary>
@@ -39,11 +46,13 @@ public partial class App
     {
         InitializeComponent();
 
-        // 步骤4：初始化服务
+        // 1. 注册服务：将服务注册到 Unity 容器中，此操作必须在应用创建时完成。而不能在 OnLaunched 事件中完成。
         var container = new UnityContainer(); // 创建一个Unity容器
         RegisterServices(container); // 注册服务
-
         Locator.Initialize(container);
+
+        // 2. 初始化日志：将日志的初始化放在最前面，以确保日志记录器在整个应用程序生命周期内都可用。
+        LogHelper.Initialize();
     }
 
     /// <summary>
@@ -52,15 +61,21 @@ public partial class App
     /// <param name="args">有关启动请求和过程的详细信息。</param>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // 取得主线程的 DispatcherQueue
         MainDispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
+        // 步骤1：检查是否需要重启
         if (!string.IsNullOrEmpty(args.Arguments) && args.Arguments.Contains("ReStart"))
         {
             PipeHelper.StartApp("RESTART");
         }
 
+        // 创建主窗口
         Window = new MainWindow();
         WindowHelper.TrackWindow(Window);
+
         // 步骤2：检查是否已经有一个实例在运行
+
         // 创建一个命名互斥体，以确保只有一个应用程序实例在运行。
         _mutex = new Mutex(true, MutexName, out var createdNew);
         if (!createdNew)
@@ -74,59 +89,19 @@ public partial class App
 
         // 步骤3：启动管道服务端，用于接收来自其他实例的消息。
         Task.Run(PipeHelper.StartPipeServer); // 启动管道服务端
+
+        // 步骤4：启动窗口
         PipeHelper.StartApp("SHOW");
+
+        // 步骤5：初始化主题
         ThemeHelper.Initialize();
         TitleBarHelper.ApplySystemThemeToCaptionButtons(Window);
 
-        // 数据库文件路径
-        var databasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "database.db");
-
-        // 检查文件是否存在
-        if (!File.Exists(databasePath))
-        {
-            Logger.Info(@"Database file not found. Creating new database...");
-
-            // 创建数据库文件并初始化表
-            CreateDatabaseAndTable(databasePath);
-
-            Logger.Info(@"Database file and Logs table created successfully.");
-        }
-        else
-        {
-            Logger.Info(@"Database file already exists.");
-        }
-
     }
-
-    private static void CreateDatabaseAndTable(string databasePath)
-    {
-        // SQLite 连接字符串
-        var connectionString = $"Data Source=\"{databasePath}\";";
-
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? string.Empty);
-
-        using var connection = new SqliteConnection(connectionString);
-        connection.Open();
-        var command = connection.CreateCommand();
-
-        // 创建表的 SQL 语句
-        command.CommandText = """
-                              
-                                              CREATE TABLE IF NOT EXISTS Logs (
-                                                  TimestampUtc TEXT NOT NULL,
-                                                  Application TEXT NOT NULL,
-                                                  Level TEXT NOT NULL,
-                                                  Message TEXT NOT NULL,
-                                                  Exception TEXT,
-                                                  Logger TEXT,
-                                                  EventId INTEGER DEFAULT 0
-                                              )
-                              """;
-
-
-        command.ExecuteNonQuery();
-    }
-
+    /// <summary>
+    /// 注册服务
+    /// </summary>
+    /// <param name="container">容器</param>
     private static void RegisterServices(UnityContainer container)
     {
         container.RegisterType<MainPageViewModel>(new ContainerControlledLifetimeManager());
@@ -136,6 +111,13 @@ public partial class App
 
     public static Window? Window { get; private set; }
 
+    /// <summary>
+    /// 从字符串转换为枚举。
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型。</typeparam>
+    /// <param name="text">要转换的字符串。</param>
+    /// <returns>枚举值。</returns>
+    /// <exception cref="InvalidOperationException">如果泛型参数 'TEnum' 不是枚举，则抛出异常。</exception>
     public static TEnum GetEnum<TEnum>(string? text) where TEnum : struct
     {
         if (!typeof(TEnum).GetTypeInfo().IsEnum)
@@ -146,8 +128,12 @@ public partial class App
         return (TEnum)Enum.Parse(typeof(TEnum), text!);
     }
 
+    /// <summary>
+    /// 释放资源。
+    /// </summary>
     ~App()
     {
+        // 释放互斥体
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
     }

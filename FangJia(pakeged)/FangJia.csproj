@@ -20,6 +20,7 @@
 			IDE0079;
 			NU1702;
 			MVVMTK0045;
+			CA1416;
 
 		</NoWarn>
 		<MSBuildWarningsAsMessages>
@@ -50,6 +51,7 @@
 		<None Remove="Pages\Data\DrugPage.xaml" />
 		<None Remove="Pages\Data\FormulationPage.xaml" />
 		<None Remove="Pages\HomePage.xaml" />
+		<None Remove="Pages\LogsPage.xaml" />
 		<None Remove="Pages\SettingsPage.xaml" />
 	</ItemGroup>
 
@@ -106,6 +108,11 @@
 	  <EmbeddedResource Update="Properties\Resource.resx">
 	    <Generator>ResXFileCodeGenerator</Generator>
 	  </EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\LogsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 	<ItemGroup>
 		<Page Update="Pages\Data\CasePage.xaml">
