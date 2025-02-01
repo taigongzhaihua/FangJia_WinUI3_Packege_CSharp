@@ -42,6 +42,7 @@
 		<None Remove="Assets\BadgeLogo.scale-150.png" />
 		<None Remove="Assets\BadgeLogo.scale-200.png" />
 		<None Remove="Assets\BadgeLogo.scale-400.png" />
+		<None Remove="Assets\StoreLogo.ico" />
 		<None Remove="Assets\StoreLogo.svg" />
 		<None Remove="Nlog.config" />
 		<None Remove="Pages\AboutPage.xaml" />
@@ -78,14 +79,15 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.241112-preview1" />
-		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.241112-preview1" />
+		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250129-preview2" />
+		<PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3079-prerelease" />
@@ -100,6 +102,9 @@
 		<PackageReference Include="WinUIEx" Version="2.5.1" />
 	</ItemGroup>
 	<ItemGroup>
+	  <EmbeddedResource Include="Assets\StoreLogo.ico">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	  <EmbeddedResource Include="Nlog.config">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </EmbeddedResource>

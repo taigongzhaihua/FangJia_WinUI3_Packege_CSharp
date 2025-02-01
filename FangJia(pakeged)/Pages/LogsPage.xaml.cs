@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -23,7 +22,6 @@ public sealed partial class LogsPage
     public ObservableCollection<LogItem>? FilteredLogs { get; set; } = [];
 
     // 用于控制轮询线程的取消令牌
-    private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     public LogsPage()
     {
@@ -98,7 +96,7 @@ public sealed partial class LogsPage
 
     private void SetCheckedState()
     {
-        // 第一次调用时控件为null，因此我们只需要对任意一个控件进行null检查。
+        // 第一次调用时控件为 null，因此我们只需要对任意一个控件进行 null检查。
         if (Option1CheckBox != null)
         {
             OptionsAllCheckBox.IsChecked = Option1CheckBox.IsChecked switch

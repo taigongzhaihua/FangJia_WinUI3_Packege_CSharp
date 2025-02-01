@@ -9,11 +9,15 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using NLog;
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.Foundation;
 using Windows.Graphics;
+using Windows.UI;
+using WinUIEx;
 using Category = FangJia.Common.Category;
 
 #pragma warning disable CA1416
@@ -33,7 +37,9 @@ public sealed partial class MainWindow
 {
     private readonly AppWindow _appWindow;
     internal MainPageViewModel ViewModel;
-
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private const string CloseModeClose = "Close";
+    private const string CloseModeHide = "Hide";
     public MainWindow()
     {
         InitializeComponent();
@@ -48,7 +54,7 @@ public sealed partial class MainWindow
         AppTitleBar.SizeChanged += AppTitleBar_SizeChanged;
         AppTitleBar.Loaded += AppTitleBar_Loaded;
         ContentFrame.Navigated += ContentFrame_Navigated;
-
+        _appWindow.Closing += OnClosing;
         ExtendsContentIntoTitleBar = true;
         if (ExtendsContentIntoTitleBar)
         {
@@ -63,17 +69,112 @@ public sealed partial class MainWindow
 
         // 设置窗口标题栏按钮颜色
         _appWindow.TitleBar.ButtonForegroundColor =
-
             ((SolidColorBrush)Application.Current.Resources["WindowCaptionForeground"]).Color;
 
         _appWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-
-        // Replace the line causing the error
-        // var window = new WinUIEx.WindowManager(this);
+        _appWindow.TitleBar.ButtonHoverBackgroundColor =
+            ThemeHelper.IsDarkTheme()
+                ? Color.FromArgb(96, 255, 255, 255)
+                : Color.FromArgb(96, 0, 0, 0);
+        _appWindow.TitleBar.ButtonPressedBackgroundColor =
+            ThemeHelper.IsDarkTheme()
+                ? Color.FromArgb(160, 255, 255, 255)
+                : Color.FromArgb(160, 0, 0, 0);
 
         // With the correct instantiation
-        var window = WinUIEx.WindowManager.Get(this);
+        var window = WindowManager.Get(this);
         window.MinWidth = 610;
+    }
+
+    private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+
+        try
+        {
+            // 阻止默认关闭行为
+            args.Cancel = true;
+
+            // 获取设置视图模型
+            var settingsViewModel = Locator.GetService<SettingsViewModel>();
+
+            // 如果已预设关闭模式，则直接执行对应操作
+            if (settingsViewModel.CloseMode == CloseModeClose)
+            {
+                Application.Current.Exit();
+                return;
+            }
+            if (settingsViewModel.CloseMode == CloseModeHide)
+            {
+                this.Hide();
+                return;
+            }
+
+            // 显示关闭确认对话框，并获取用户操作及“记住选择”的结果
+            var (dialogResult, rememberChoice) = await ShowClosingDialogAsync();
+
+            // 如果用户选中了“记住选择”，则更新设置
+            if (rememberChoice)
+            {
+                settingsViewModel.CloseMode = dialogResult switch
+                {
+                    ContentDialogResult.Primary => CloseModeClose,
+                    ContentDialogResult.Secondary => CloseModeHide,
+                    _ => settingsViewModel.CloseMode
+                };
+            }
+
+            // 根据对话框返回结果执行操作
+            switch (dialogResult)
+            {
+                case ContentDialogResult.Primary:
+                    Application.Current.Exit();
+                    break;
+                case ContentDialogResult.Secondary:
+                    this.Hide();
+                    break;
+                    // ContentDialogResult.None 或其它情况均不做操作
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"关闭发生错误：{ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 显示关闭确认对话框，并返回对话框结果以及用户是否选中了“记住选择”。
+    /// </summary>
+    /// <returns>
+    /// 一个元组，其中 Item1 为对话框结果，Item2 为布尔值表示是否选中了“记住选择”。
+    /// </returns>
+    private async Task<(ContentDialogResult dialogResult, bool rememberChoice)> ShowClosingDialogAsync()
+    {
+        // 构造对话框内容
+        var content = new StackPanel { Margin = new Thickness(0) };
+        content.Children.Add(new TextBlock { Text = "是否关闭应用程序？" });
+
+        var rememberChoiceCheckBox = new CheckBox
+        {
+            Content = "记住我的选择",
+            Margin = new Thickness(16, 10, 0, 0)
+        };
+        content.Children.Add(rememberChoiceCheckBox);
+
+        // 配置 ContentDialog（在桌面应用中需设置 XamlRoot）
+        var dialog = new ContentDialog
+        {
+            Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style,
+            Title = "是否关闭",
+            PrimaryButtonText = "关闭",
+            SecondaryButtonText = "最小化到托盘",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+            Content = content,
+            XamlRoot = ContentFrame.XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        return (result, rememberChoiceCheckBox.IsChecked == true);
     }
 
     private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
@@ -341,4 +442,17 @@ public sealed partial class MainWindow
         TitleBarHelper.ApplySystemThemeToCaptionButtons(this);
     }
 
+    private void SettingsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        this.Show();
+        Activate();
+        ContentFrame.Navigate(NavigationHelper.GetType("SettingsPage"));
+    }
+
+    private void LogsMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        this.Show();
+        Activate();
+        ContentFrame.Navigate(NavigationHelper.GetType("LogsPage"));
+    }
 }

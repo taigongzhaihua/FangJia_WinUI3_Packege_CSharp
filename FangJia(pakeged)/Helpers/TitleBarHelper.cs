@@ -1,5 +1,6 @@
 ﻿using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Windows.UI;
 
 namespace FangJia.Helpers
 {
@@ -14,6 +15,17 @@ namespace FangJia.Helpers
         {
             var color = ThemeHelper.ActualTheme == ElementTheme.Dark ? Colors.White : Colors.Black;
             SetCaptionButtonColors(window, color);
+
+            var hoverColor = ThemeHelper.IsDarkTheme()
+                ? Color.FromArgb(96, 255, 255, 255)
+                : Color.FromArgb(96, 0, 0, 0);
+            SetCaptionButtonHoverBackgroundColor(window, hoverColor);
+
+            var pressedColor = ThemeHelper.IsDarkTheme()
+                ? Color.FromArgb(160, 255, 255, 255)
+                : Color.FromArgb(160, 0, 0, 0);
+            SetCaptionButtonPressedBackgroundColor(window, pressedColor);
+
             return color;
         }
 
@@ -40,6 +52,19 @@ namespace FangJia.Helpers
         {
             var titleBar = window.AppWindow.TitleBar;
             titleBar.BackgroundColor = color;
+        }
+
+        public static void SetCaptionButtonHoverBackgroundColor(Window? window, Windows.UI.Color? color)
+        {
+            if (window == null) return;
+            var titleBar = window.AppWindow.TitleBar;
+            titleBar.ButtonHoverBackgroundColor = color;
+        }
+        public static void SetCaptionButtonPressedBackgroundColor(Window? window, Windows.UI.Color? color)
+        {
+            if (window == null) return;
+            var titleBar = window.AppWindow.TitleBar;
+            titleBar.ButtonPressedBackgroundColor = color;
         }
     }
 }

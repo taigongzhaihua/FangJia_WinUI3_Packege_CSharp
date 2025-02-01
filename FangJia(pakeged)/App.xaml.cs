@@ -39,6 +39,7 @@ public partial class App
     /// </summary>
     private static Mutex? _mutex;
 
+
     /// <summary>
     /// 初始化单例应用程序对象。这是执行的第一行编写代码，因此是 main() 或 WinMain() 的逻辑等效项。
     /// </summary>
@@ -96,7 +97,6 @@ public partial class App
         // 步骤5：初始化主题
         ThemeHelper.Initialize();
         TitleBarHelper.ApplySystemThemeToCaptionButtons(Window);
-
     }
     /// <summary>
     /// 注册服务
@@ -110,7 +110,7 @@ public partial class App
     }
 
     public static Window? Window { get; private set; }
-
+    public static bool HandleClosedEvents { get; set; } = true;
     /// <summary>
     /// 从字符串转换为枚举。
     /// </summary>

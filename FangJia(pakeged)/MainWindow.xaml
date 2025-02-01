@@ -7,12 +7,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="using:CommunityToolkit.WinUI.Converters"
-        xmlns:converter="using:FangJia.Converters"
         xmlns:common="using:FangJia.Common"
+        xmlns:tb="using:H.NotifyIcon"
+        xmlns:converters="using:FangJia.Converters"
         mc:Ignorable="d"
         Title="方家">
-    <Window.Content>
         <Grid x:Name="MainGrid"
               ActualThemeChanged="MainGrid_OnActualThemeChanged">
             <Grid.Resources>
@@ -31,8 +30,9 @@
                         </DataTemplate>
                     </common:MenuItemTemplateSelector.ItemTemplate>
                 </common:MenuItemTemplateSelector>
-                <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-                <converter:BoolToNavigateBackVisible x:Key="BoolToNavigateBackVisible"/>
+                <converters:BoolToMenuTextConverter x:Key="BoolToMenuTextConverter"
+                                                    TrueText="最小化到托盘"
+                                                    FalseText="打开窗口"/>
             </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -72,7 +72,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Image x:Name="TitleBarIcon"
-                       
+
                        Grid.Column="1"
                        Height="24"
                        Margin="8,0,4,0"
@@ -89,7 +89,7 @@
                            Margin="8,0,0,0"
                            Grid.Column="2"
                            VerticalAlignment="Center"
-                           Style="{ThemeResource BodyTextBlockStyle}"/>
+                           Style="{ThemeResource BodyTextBlockStyle}" />
                 <PersonPicture x:Name="PersonPic"
                                Grid.Column="5"
                                Height="32"
@@ -157,8 +157,7 @@
                                        ItemClicked="BreadcrumbBar2_ItemClicked"
                                        VerticalAlignment="Center"
                                        BackgroundSizing="InnerBorderEdge"
-                                       CharacterSpacing="20"
-                                       >
+                                       CharacterSpacing="20">
                             <BreadcrumbBar.ItemTemplate>
                                 <DataTemplate x:DataType="common:Category">
                                     <BreadcrumbBarItem Content="{Binding}" AutomationProperties.Name="{Binding Name}"
@@ -176,10 +175,53 @@
                         </BreadcrumbBar>
                     </Grid>
                 </NavigationView.Header>
-                
+
                 <Frame x:Name="ContentFrame" />
             </NavigationView>
+            <tb:TaskbarIcon Grid.Row="0" Grid.Column="0"
+                            ToolTipText="方家"
+                            IconSource="ms-appx:///Assets/StoreLogo.ico"
+                            MenuActivation="RightClick"
+                            DoubleClickCommand="{x:Bind ViewModel.ShowHideWindowCommand}"
+                            ContextMenuMode="SecondWindow"
+                            PopupPlacement="Top"
+                            PopupActivation="RightClick">
+                <tb:TaskbarIcon.ContextFlyout>
+                    <MenuFlyout AreOpenCloseAnimationsEnabled="False"
+                                ShowMode="Auto"
+                                x:Name="TrayMenuFlyout"
+                                Placement="Top">
+                        <MenuFlyoutItem Text="{Binding IsWindowVisible,Converter={StaticResource BoolToMenuTextConverter}}"
+                                        Command="{x:Bind ViewModel.ShowHideWindowCommand}"
+                                        x:Name="ShowOrHideMenuItem"
+                                        DataContext="{x:Bind ViewModel}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE737;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="日志"
+                                        Click="LogsMenuItem_OnClick">
+                            <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xF000;" />
+                        </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="设置"
+                                        Click="SettingsMenuItem_OnClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE713;" />
+                        </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="退出"
+                                        Command="{x:Bind ViewModel.ExitApplicationCommand}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE7E8;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </tb:TaskbarIcon.ContextFlyout>
+            </tb:TaskbarIcon>
         </Grid>
-    </Window.Content>
 </Window>
 <!-- ReSharper restore UnusedMember.Local -->

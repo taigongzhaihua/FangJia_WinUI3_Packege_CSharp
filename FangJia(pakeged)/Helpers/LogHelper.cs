@@ -144,6 +144,7 @@ public static class LogHelper
 
         return logs;
     }
+
 }
 
 public class LogItem
@@ -158,6 +159,8 @@ public class LogItem
 
     public override string ToString()
     {
-        return $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fffz}] [{Level}] {Logger}\t：{Message}:{Exception}";
+        var l = $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fffz}] [{Level}] {Logger}\t：{Message}";
+        if (!string.IsNullOrWhiteSpace(Exception)) l += $" - {Exception}";
+        return l;
     }
 }
