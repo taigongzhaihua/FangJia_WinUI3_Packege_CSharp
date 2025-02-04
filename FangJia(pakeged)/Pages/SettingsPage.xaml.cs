@@ -17,11 +17,10 @@ namespace FangJia.Pages;
 [SuppressMessage("ReSharper", "UnusedMember.Local")]
 public sealed partial class SettingsPage
 {
-    private SettingsViewModel ViewModel { get; }
+    private SettingsViewModel ViewModel { get; } = Locator.GetService<SettingsViewModel>();
     public SettingsPage()
     {
         InitializeComponent();
-        ViewModel = Locator.GetService<SettingsViewModel>();
     }
 
     private void ThemeMode_SelectionChanged(object sender, RoutedEventArgs e)

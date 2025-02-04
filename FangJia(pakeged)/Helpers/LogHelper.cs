@@ -16,7 +16,7 @@ public static class LogHelper
 
     public static void Initialize()
     {
-        LogLevel = LogLevel.FromString(ApplicationData.Current.LocalSettings.Values[LogLevelKey] as string ?? "Trace");
+        LogLevel = LogLevel.FromString(ApplicationData.Current.LocalSettings.Values[LogLevelKey] as string ?? "Debug");
         CreateDatabaseIfNotExists();
     }
 
@@ -72,7 +72,7 @@ public static class LogHelper
         get =>
             // 从 LocalSettings 加载日志级别
             ApplicationData.Current.LocalSettings.Values.TryGetValue(LogLevelKey, out var logLevelValue)
-                ? LogLevel.FromString(logLevelValue as string ?? "Trace")
+                ? LogLevel.FromString(logLevelValue as string ?? "Debug")
                 : LogLevel.Trace;
         set
         {
@@ -97,54 +97,65 @@ public static class LogHelper
         }
     }
 
-    public static List<LogItem> GetLogs(DateTime? startDate, DateTime? endDate, string? level = null)
+    public static async IAsyncEnumerable<LogItem> GetLogsAsync(long? startTime, List<string> logLevels)
     {
-        var logs = new List<LogItem>();
         var connectionString = $"Data Source=\"{DatabasePath}\";";
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        // 基础查询语句
+        var query = "SELECT TimestampUtc, Application, Level, Message, Exception, Logger, EventId FROM Logs";
 
-        using var connection = new SqliteConnection(connectionString);
-        connection.Open();
-        var command = connection.CreateCommand();
+        // 用来存放各个过滤条件
+        var conditions = new List<string>();
 
-        // 构建 SQL 查询语句
-        command.CommandText = "SELECT TimestampUtc, Application, Level, Message, Exception, Logger, EventId FROM Logs WHERE 1=1";
-
-        if (startDate.HasValue)
+        // 如果提供了开始时间，就添加 TimestampUtc 的过滤条件
+        if (startTime.HasValue)
         {
-            command.CommandText += " AND TimestampUtc >= @StartDate";
-            command.Parameters.AddWithValue("@StartDate", new DateTimeOffset(startDate.Value).ToUnixTimeMilliseconds());
+            conditions.Add("TimestampUtc >= $startTime");
+            command.Parameters.AddWithValue("$startTime", startTime.Value);
         }
 
-        if (endDate.HasValue)
+        // 如果提供了日志级别，并且列表中至少有一个级别，就添加 Level 的过滤条件
+        if (logLevels is { Count: > 0 })
         {
-            command.CommandText += " AND TimestampUtc <= @EndDate";
-            command.Parameters.AddWithValue("@EndDate", new DateTimeOffset(endDate.Value).ToUnixTimeMilliseconds());
-        }
-
-        if (!string.IsNullOrEmpty(level))
-        {
-            command.CommandText += " AND Level = @Level";
-            command.Parameters.AddWithValue("@Level", level);
-        }
-
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-        {
-            logs.Add(new LogItem
+            // 为了参数化，动态生成参数名
+            var levelParams = new List<string>();
+            for (var i = 0; i < logLevels.Count; i++)
             {
-                TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0)).UtcDateTime,
+                var paramName = $"$logLevel{i}";
+                levelParams.Add(paramName);
+                command.Parameters.AddWithValue(paramName, logLevels[i]);
+            }
+            // 添加 IN 条件
+            conditions.Add($"Level IN ({string.Join(", ", levelParams)})");
+        }
+
+        // 如果有任何条件，则把它们拼接到查询语句中
+        if (conditions.Count > 0)
+        {
+            query += " WHERE " + string.Join(" AND ", conditions);
+        }
+
+        // 排序（根据需要可以调整排序顺序）
+        query += " ORDER BY TimestampUtc DESC";
+
+        command.CommandText = query;
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            yield return new LogItem
+            {
+                TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0)).DateTime,
                 Application = reader.GetString(1),
                 Level = reader.GetString(2),
                 Message = reader.GetString(3),
                 Exception = reader.IsDBNull(4) ? null : reader.GetString(4),
                 Logger = reader.IsDBNull(5) ? null : reader.GetString(5),
                 EventId = reader.GetInt32(6)
-            });
+            };
         }
-
-        return logs;
     }
-
 }
 
 public class LogItem
@@ -159,8 +170,8 @@ public class LogItem
 
     public override string ToString()
     {
-        var l = $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fffz}] [{Level}] {Logger}\t：{Message}";
+        var l = $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fff}] [{Level}] {Logger}\t：{Message}";
         if (!string.IsNullOrWhiteSpace(Exception)) l += $" - {Exception}";
         return l;
-    }
+ }
 }

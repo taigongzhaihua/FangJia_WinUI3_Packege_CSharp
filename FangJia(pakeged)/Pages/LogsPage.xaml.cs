@@ -1,8 +1,14 @@
+using CommunityToolkit.WinUI;
 using FangJia.Helpers;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using NLog;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -14,66 +20,83 @@ namespace FangJia.Pages;
 /// </summary>
 public sealed partial class LogsPage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    // 全部日志数据
-    private readonly ObservableCollection<LogItem> _allLogs = [];
+    private readonly DispatcherQueue _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
-    // 筛选后的日志
-    public ObservableCollection<LogItem>? FilteredLogs { get; set; } = [];
+    // 日志数据
+    private ObservableCollection<LogItem> FilteredLogs { get; set; } = [];
 
-    // 用于控制轮询线程的取消令牌
+    // 日志时间范围
+    private long? _startUnixTime;
+    private readonly List<string> _level = ["DEBUG", "INFO", "WARN", "ERROR"];
 
     public LogsPage()
     {
         InitializeComponent();
         OptionsAllCheckBox.IsChecked = true;
-
-        LoadLogs();
+        LogTime.SelectedIndex = 0;
     }
 
-    private void LoadLogs()
+    private async void LoadLogsAsync()
     {
-        var logs = LogHelper.GetLogs(null, null); // 获取全部日志
-        _allLogs.Clear();
-        foreach (var log in logs)
+        try
         {
-            _allLogs.Add(log);
+            ConcurrentQueue<LogItem> batch = [];
+
+            await _dispatcherQueue.EnqueueAsync(() =>
+            {
+                LoadingRing.IsActive = true;
+                LoadingRing.Visibility = Visibility.Visible;
+                FilteredLogs.Clear();
+            });
+
+            await foreach (var log in LogHelper.GetLogsAsync(_startUnixTime, _level))
+            {
+                batch.Enqueue(log);
+
+                if (batch.Count < 40) continue;
+                await _dispatcherQueue.EnqueueAsync(() =>
+                {
+                    foreach (var item in batch)
+                    {
+                        FilteredLogs.Add(item);
+                    }
+                });
+                batch.Clear();
+            }
+
+            if (!batch.IsEmpty)
+            {
+                await _dispatcherQueue.EnqueueAsync(() =>
+                {
+                    foreach (var item in batch)
+                    {
+                        FilteredLogs.Add(item);
+                    }
+                });
+            }
+
+            await _dispatcherQueue.EnqueueAsync(() =>
+            {
+                LoadingRing.IsActive = false;
+                LoadingRing.Visibility = Visibility.Collapsed;
+            });
         }
-        ApplyFilter();
-    }
-
-    private void ApplyFilter()
-    {
-        var startDate = StartDatePicker.Date?.DateTime;
-        var endDate = EndDatePicker.Date?.DateTime;
-
-
-        var filtered = _allLogs
-            .Where(log =>
-                (!startDate.HasValue || log.TimestampUtc >= startDate.Value.Date) &&
-                (!endDate.HasValue || log.TimestampUtc <= endDate.Value))
-            .ToList();
-
-        FilteredLogs?.Clear();
-        foreach (var log in filtered)
+        catch (Exception e)
         {
-            FilteredLogs?.Add(log);
+            Logger.Error($"读取日志出错：{e.Message}");
         }
-    }
-
-    private void DatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
-    {
-        ApplyFilter();
     }
 
     private void SelectAll_Checked(object sender, RoutedEventArgs e)
     {
-        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = true;
+        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = true;
     }
 
     private void SelectAll_Unchecked(object sender, RoutedEventArgs e)
     {
-        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = false;
+        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = false;
     }
 
     private void SelectAll_Indeterminate(object sender, RoutedEventArgs e)
@@ -86,7 +109,8 @@ public sealed partial class LogsPage
 
         if (Option1CheckBox.IsChecked == true &&
             Option2CheckBox.IsChecked == true &&
-            Option3CheckBox.IsChecked == true)
+            Option3CheckBox.IsChecked == true &&
+            Option4CheckBox.IsChecked == true)
         {
             // 这将导致执行SelectAll_Unchecked，
             // 因此我们不需要在这里取消选中其他框。
@@ -97,15 +121,36 @@ public sealed partial class LogsPage
     private void SetCheckedState()
     {
         // 第一次调用时控件为 null，因此我们只需要对任意一个控件进行 null检查。
-        if (Option1CheckBox != null)
+        if (Option1CheckBox == null) return;
+        OptionsAllCheckBox.IsChecked = Option1CheckBox.IsChecked switch
         {
-            OptionsAllCheckBox.IsChecked = Option1CheckBox.IsChecked switch
-            {
-                true when Option2CheckBox.IsChecked == true && Option3CheckBox.IsChecked == true => true,
-                false when Option2CheckBox.IsChecked == false && Option3CheckBox.IsChecked == false => false,
-                _ => null
-            };
+            true when Option2CheckBox.IsChecked == true &&
+                      Option3CheckBox.IsChecked == true &&
+                      Option4CheckBox.IsChecked == true => true,
+            false when Option2CheckBox.IsChecked == false &&
+                       Option3CheckBox.IsChecked == false &&
+                       Option4CheckBox.IsChecked == false => false,
+            _ => null
+        };
+        _level.Clear();
+        if (Option1CheckBox.IsChecked == true)
+        {
+            _level.Add("DEBUG");
         }
+        if (Option2CheckBox.IsChecked == true)
+        {
+            _level.Add("INFO");
+        }
+        if (Option3CheckBox.IsChecked == true)
+        {
+            _level.Add("WARN");
+        }
+        if (Option4CheckBox.IsChecked == true)
+        {
+            _level.Add("ERROR");
+        }
+        LogsBlock.ScrollTo(0, 0);
+        Task.Run(LoadLogsAsync);
     }
 
     private void Option_Checked(object sender, RoutedEventArgs e)
@@ -118,4 +163,27 @@ public sealed partial class LogsPage
         SetCheckedState();
     }
 
+    private void RadioButtons_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not RadioButtons rbs) return;
+        var t = rbs.SelectedItem as string;
+        DateTime time;
+        switch (t)
+        {
+            case "今日":
+                time = DateTime.Now.Date;
+                _startUnixTime = new DateTimeOffset(time).ToUnixTimeMilliseconds();
+                break;
+            case "7日内":
+                time = DateTime.Now.Date.AddDays(-7);
+                _startUnixTime = new DateTimeOffset(time).ToUnixTimeMilliseconds();
+                break;
+            default:
+                _startUnixTime = null;
+                break;
+        }
+
+        LogsBlock.ScrollTo(0, 0);
+        Task.Run(LoadLogsAsync);
+    }
 }

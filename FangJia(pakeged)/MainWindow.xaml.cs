@@ -36,7 +36,7 @@ namespace FangJia;
 public sealed partial class MainWindow
 {
     private readonly AppWindow _appWindow;
-    internal MainPageViewModel ViewModel;
+    internal MainPageViewModel ViewModel = Locator.GetService<MainPageViewModel>();
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private const string CloseModeClose = "Close";
     private const string CloseModeHide = "Hide";
@@ -47,7 +47,6 @@ public sealed partial class MainWindow
         // 假设 "this" 是一个 XAML 窗口。在不使用 WinUI 3 1.3 或更高版本的项目中，使用互操作 API 获取 AppWindow。
         // WinUI 3 1.3 或更高版本，使用互操作 API 获取 AppWindow。
 
-        ViewModel = Locator.GetService<MainPageViewModel>();
         _appWindow = AppWindow;
         _appWindow.Changed += AppWindow_Changed;
         Activated += MainWindow_Activated;
@@ -55,6 +54,7 @@ public sealed partial class MainWindow
         AppTitleBar.Loaded += AppTitleBar_Loaded;
         ContentFrame.Navigated += ContentFrame_Navigated;
         _appWindow.Closing += OnClosing;
+        TrayIcon.Loaded += TrayIcon_Loaded;
         ExtendsContentIntoTitleBar = true;
         if (ExtendsContentIntoTitleBar)
         {
@@ -65,7 +65,7 @@ public sealed partial class MainWindow
         TitleBarTextBlock.Text = AppInfo.Current.DisplayInfo.DisplayName;
 #endif
         // 设置窗口图标
-        _appWindow.SetIcon("Assets/StoreLogo.ico");
+        _appWindow.SetIcon("Assets/StoreLogo.ico"); // 设置窗口图标
 
         // 设置窗口标题栏按钮颜色
         _appWindow.TitleBar.ButtonForegroundColor =
@@ -86,6 +86,12 @@ public sealed partial class MainWindow
         window.MinWidth = 610;
     }
 
+    private void TrayIcon_Loaded(object sender, RoutedEventArgs e)
+    {
+        Activate();
+        this.Show();
+    }
+
     private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
 
@@ -97,16 +103,15 @@ public sealed partial class MainWindow
             // 获取设置视图模型
             var settingsViewModel = Locator.GetService<SettingsViewModel>();
 
-            // 如果已预设关闭模式，则直接执行对应操作
-            if (settingsViewModel.CloseMode == CloseModeClose)
+            switch (settingsViewModel.CloseMode)
             {
-                Application.Current.Exit();
-                return;
-            }
-            if (settingsViewModel.CloseMode == CloseModeHide)
-            {
-                this.Hide();
-                return;
+                // 如果已预设关闭模式，则直接执行对应操作
+                case CloseModeClose:
+                    Application.Current.Exit();
+                    return;
+                case CloseModeHide:
+                    this.Hide();
+                    return;
             }
 
             // 显示关闭确认对话框，并获取用户操作及“记住选择”的结果
@@ -131,8 +136,11 @@ public sealed partial class MainWindow
                     break;
                 case ContentDialogResult.Secondary:
                     this.Hide();
+                    ViewModel.IsWindowVisible = false;
                     break;
-                    // ContentDialogResult.None 或其它情况均不做操作
+                case ContentDialogResult.None:
+                default:
+                    break;
             }
         }
         catch (Exception ex)
@@ -170,7 +178,8 @@ public sealed partial class MainWindow
             CloseButtonText = "取消",
             DefaultButton = ContentDialogButton.Primary,
             Content = content,
-            XamlRoot = ContentFrame.XamlRoot
+            XamlRoot = ContentFrame.XamlRoot,
+            RequestedTheme = ThemeHelper.RootTheme
         };
 
         var result = await dialog.ShowAsync();
@@ -263,7 +272,6 @@ public sealed partial class MainWindow
     {
 
         if (ExtendsContentIntoTitleBar)
-
         {
             // Update interactive regions if the size of the window changes.
             // 如果窗口大小发生变化，更新交互区域。

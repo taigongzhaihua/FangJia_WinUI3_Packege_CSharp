@@ -9,8 +9,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:FangJia.Helpers"
+    xmlns:converters="using:FangJia.Converters"
+    xmlns:system="using:System"
     mc:Ignorable="d"
-    Background="{ThemeResource ControlAltFillColorTransparentBrush}">
+    Background="{ThemeResource ControlAltFillColorTransparentBrush}"
+    NavigationCacheMode="Disabled">
+    <Page.Resources>
+        <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter"/>
+    </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -18,6 +24,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="24,12">
+            <TextBlock Text="级别：" Margin="10,0,0,0"
+                       VerticalAlignment="Center"/>
             <ToggleButton x:Name="OptionsAllCheckBox" Content="全部" IsThreeState="True"
                           Checked="SelectAll_Checked" Unchecked="SelectAll_Unchecked"
                           Indeterminate="SelectAll_Indeterminate"
@@ -27,26 +35,56 @@
             <ToggleButton x:Name="Option2CheckBox" Content="INFO" Margin="0" Checked="Option_Checked"
                           Unchecked="Option_Unchecked" CornerRadius="0"/>
             <ToggleButton x:Name="Option3CheckBox" Content="WARN" Margin="0" Checked="Option_Checked"
+                          Unchecked="Option_Unchecked" CornerRadius="0"/>
+            <ToggleButton x:Name="Option4CheckBox" Content="ERROR" Margin="0" Checked="Option_Checked"
                           Unchecked="Option_Unchecked" CornerRadius="0,4,4,0"/>
-            <CalendarDatePicker Margin="48,0,24,0" x:Name="StartDatePicker"
-                                DateChanged="DatePicker_DateChanged"/>
-            <TextBlock Text="~" Style="{ThemeResource BodyTextBlockStyle}" VerticalAlignment="Center"/>
-            <CalendarDatePicker Margin="24,0,24,0" x:Name="EndDatePicker"
-                                DateChanged="DatePicker_DateChanged"/>
+
+            <TextBlock Text="时间：" Margin="40,0,0,0"
+                       VerticalAlignment="Center"/>
+            <RadioButtons x:Name="LogTime"
+                          MaxColumns="3"
+                          Margin="5,0"
+                          SelectionChanged="RadioButtons_OnSelectionChanged"
+                          VerticalAlignment="Center"
+                          VerticalContentAlignment="Center">
+                <x:String>今日</x:String>
+                <x:String>7日内</x:String>
+                <x:String>全部</x:String>
+            </RadioButtons>
+            
+            <ProgressRing x:Name="LoadingRing"></ProgressRing>
         </StackPanel>
         <ScrollView Grid.Row="1"
-                    Margin="8,0,8,24">
+                    Margin="8,0,8,24"
+                    x:Name="LogsBlock">
             <!-- 日志显示区域 -->
-            <ListView x:Name="LogListView" Grid.Row="1"
-                      Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
-                      ItemsSource="{x:Bind FilteredLogs, Mode=TwoWay}">
-                <ListView.ItemTemplate>
+            <ItemsRepeater ItemsSource="{x:Bind FilteredLogs,Mode=OneWay}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Vertical"/>
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <!-- 指定 x:DataType 可以获得编译时类型检查（可选） -->
                     <DataTemplate x:DataType="helpers:LogItem">
-                        <TextBlock Text="{Binding }" TextWrapping="Wrap" />
+                        <!-- 为每个项创建一个 TextBlock，
+                 将整个数据对象绑定到 Tag 属性上 -->
+                        <TextBlock x:Name="ItemTextBlock" Tag="{Binding}" TextWrapping="Wrap">
+                            <TextBlock.Inlines>
+                                <!-- 每个 Run 通过 ElementName 引用当前 TextBlock 的 Tag 对象 -->
+                                <Run Text="["></Run>
+                                <Run Text="{Binding Tag.TimestampUtc, ElementName=ItemTextBlock,Converter={StaticResource DateTimeToStringConverter}}" Foreground="Gray"/>
+                                <Run Text="]    ["></Run>
+                                <Run Text="{Binding Tag.Level, ElementName=ItemTextBlock}" FontWeight="Bold"/>
+                                <Run Text="]&#x09;"></Run>
+                                <Run Text="{Binding Tag.Logger, ElementName=ItemTextBlock}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <Run Text="&#x09;"></Run>
+                                <Run Text="{Binding Tag.Message, ElementName=ItemTextBlock}" Foreground="Red"/>
+                                <Run Text="&#x09;"></Run>
+                                <Run Text="{Binding Tag.Exception, ElementName=ItemTextBlock}" Foreground="Red"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
         </ScrollView>
-        
     </Grid>
 </Page>

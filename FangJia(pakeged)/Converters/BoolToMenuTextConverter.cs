@@ -3,7 +3,7 @@ using System;
 
 namespace FangJia.Converters
 {
-    internal class BoolToMenuTextConverter : IValueConverter
+    public partial class BoolToMenuTextConverter : IValueConverter
     {
         public string? TrueText { get; set; }
         public string? FalseText { get; set; }

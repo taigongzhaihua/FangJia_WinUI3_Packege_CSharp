@@ -10,6 +10,7 @@
         xmlns:common="using:FangJia.Common"
         xmlns:tb="using:H.NotifyIcon"
         xmlns:converters="using:FangJia.Converters"
+        xmlns:system="using:System"
         mc:Ignorable="d"
         Title="方家">
         <Grid x:Name="MainGrid"
@@ -158,6 +159,10 @@
                                        VerticalAlignment="Center"
                                        BackgroundSizing="InnerBorderEdge"
                                        CharacterSpacing="20">
+                            <BreadcrumbBar.Resources>
+                                <x:Double x:Key="BreadcrumbBarChevronFontSize">18</x:Double>
+                            <Thickness x:Key="BreadcrumbBarChevronPadding">5,0</Thickness>
+                            </BreadcrumbBar.Resources>
                             <BreadcrumbBar.ItemTemplate>
                                 <DataTemplate x:DataType="common:Category">
                                     <BreadcrumbBarItem Content="{Binding}" AutomationProperties.Name="{Binding Name}"
@@ -185,7 +190,8 @@
                             DoubleClickCommand="{x:Bind ViewModel.ShowHideWindowCommand}"
                             ContextMenuMode="SecondWindow"
                             PopupPlacement="Top"
-                            PopupActivation="RightClick">
+                            PopupActivation="RightClick"
+                            x:Name="TrayIcon">
                 <tb:TaskbarIcon.ContextFlyout>
                     <MenuFlyout AreOpenCloseAnimationsEnabled="False"
                                 ShowMode="Auto"

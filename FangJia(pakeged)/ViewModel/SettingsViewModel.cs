@@ -1,5 +1,4 @@
-﻿
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FangJia.Helpers;
 using NLog;
 using Windows.Storage;
@@ -10,13 +9,12 @@ namespace FangJia.ViewModel
     {
         private const string CloseModeKey = "MainWindowCloseMode";
         [ObservableProperty] private string? _themeMode;
-        [ObservableProperty] private bool _isMicaTheme;
+        [ObservableProperty] private bool _isMicaTheme = ThemeHelper.IsMicaTheme;
         [ObservableProperty] private string? _logWriteLevel;
         [ObservableProperty] private string? _closeMode;
         public SettingsViewModel()
         {
             ThemeMode = ThemeHelper.RootTheme.ToString();
-            IsMicaTheme = ThemeHelper.IsMicaTheme;
             LogWriteLevel = LogHelper.LogLevel.Name;
             CloseMode = ApplicationData.Current.LocalSettings.Values[CloseModeKey]?.ToString() ?? "Default";
         }
