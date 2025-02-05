@@ -20,11 +20,6 @@ using Category = FangJia.Common.Category;
 #pragma warning disable CA1416
 
 namespace FangJia;
-
-/// <summary>
-/// 一个可以单独使用或在 Frame 中导航到的空窗口。
-/// </summary>
-
 public sealed partial class MainWindow
 {
     private readonly AppWindow _appWindow;
