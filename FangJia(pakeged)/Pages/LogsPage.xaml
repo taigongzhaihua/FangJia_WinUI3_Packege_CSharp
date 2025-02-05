@@ -43,6 +43,7 @@
                        VerticalAlignment="Center"/>
             <RadioButtons x:Name="LogTime"
                           MaxColumns="3"
+                          SelectedIndex="0"
                           Margin="5,0"
                           SelectionChanged="RadioButtons_OnSelectionChanged"
                           VerticalAlignment="Center"

@@ -8,6 +8,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -23,23 +26,33 @@ public sealed partial class LogsPage
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private readonly DispatcherQueue _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+    private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
 
     // 日志数据
-    private ObservableCollection<LogItem> FilteredLogs { get; set; } = [];
+    private ObservableCollection<LogItem> FilteredLogs { get; } = [];
 
     // 日志时间范围
-    private long? _startUnixTime;
+    private long? _startUnixTime =
+        new DateTimeOffset(DateTime.Now.Date.ToUniversalTime().AddHours(8)).ToUnixTimeMilliseconds();
+
     private readonly List<string> _level = ["DEBUG", "INFO", "WARN", "ERROR"];
 
     public LogsPage()
     {
         InitializeComponent();
         OptionsAllCheckBox.IsChecked = true;
-        LogTime.SelectedIndex = 0;
     }
 
+    [SuppressMessage("ReSharper", "AsyncVoidMethod")]
     private async void LoadLogsAsync()
     {
+        // 尝试进入信号量，如果没有获取到则直接返回
+        if (!await _loadSemaphore.WaitAsync(0))
+        {
+            // 如果需要，可以在这里提示用户“加载正在进行中”
+            return;
+        }
+
         try
         {
             ConcurrentQueue<LogItem> batch = [];
@@ -56,47 +69,58 @@ public sealed partial class LogsPage
                 batch.Enqueue(log);
 
                 if (batch.Count < 40) continue;
-                await _dispatcherQueue.EnqueueAsync(() =>
-                {
-                    foreach (var item in batch)
-                    {
-                        FilteredLogs.Add(item);
-                    }
-                });
-                batch.Clear();
-            }
+                // 复制 batch 的内容到一个临时列表
+                var tempBatch = batch.ToList();
+                batch = [];
 
-            if (!batch.IsEmpty)
-            {
                 await _dispatcherQueue.EnqueueAsync(() =>
                 {
-                    foreach (var item in batch)
+                    foreach (var item in tempBatch)
                     {
                         FilteredLogs.Add(item);
                     }
                 });
             }
 
-            await _dispatcherQueue.EnqueueAsync(() =>
+            if (batch.IsEmpty) return;
             {
-                LoadingRing.IsActive = false;
-                LoadingRing.Visibility = Visibility.Collapsed;
-            });
+                var tempBatch = batch.ToList();
+
+                await _dispatcherQueue.EnqueueAsync(() =>
+                {
+                    foreach (var item in tempBatch)
+                    {
+                        FilteredLogs.Add(item);
+                    }
+                });
+            }
         }
         catch (Exception e)
         {
             Logger.Error($"读取日志出错：{e.Message}");
         }
+        finally
+        {
+            await _dispatcherQueue.EnqueueAsync(() =>
+            {
+                LoadingRing.IsActive = false;
+                LoadingRing.Visibility = Visibility.Collapsed;
+            });
+            // 释放信号量
+            _loadSemaphore.Release();
+        }
     }
 
     private void SelectAll_Checked(object sender, RoutedEventArgs e)
     {
-        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = true;
+        Option1CheckBox.IsChecked =
+            Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = true;
     }
 
     private void SelectAll_Unchecked(object sender, RoutedEventArgs e)
     {
-        Option1CheckBox.IsChecked = Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = false;
+        Option1CheckBox.IsChecked =
+            Option2CheckBox.IsChecked = Option3CheckBox.IsChecked = Option4CheckBox.IsChecked = false;
     }
 
     private void SelectAll_Indeterminate(object sender, RoutedEventArgs e)
@@ -137,18 +161,22 @@ public sealed partial class LogsPage
         {
             _level.Add("DEBUG");
         }
+
         if (Option2CheckBox.IsChecked == true)
         {
             _level.Add("INFO");
         }
+
         if (Option3CheckBox.IsChecked == true)
         {
             _level.Add("WARN");
         }
+
         if (Option4CheckBox.IsChecked == true)
         {
             _level.Add("ERROR");
         }
+
         LogsBlock.ScrollTo(0, 0);
         Task.Run(LoadLogsAsync);
     }
@@ -171,11 +199,11 @@ public sealed partial class LogsPage
         switch (t)
         {
             case "今日":
-                time = DateTime.Now.Date;
+                time = DateTime.Now.Date.ToUniversalTime().AddHours(8);
                 _startUnixTime = new DateTimeOffset(time).ToUnixTimeMilliseconds();
                 break;
             case "7日内":
-                time = DateTime.Now.Date.AddDays(-7);
+                time = DateTime.Now.Date.AddDays(-7).ToUniversalTime().AddHours(8);
                 _startUnixTime = new DateTimeOffset(time).ToUnixTimeMilliseconds();
                 break;
             default:
