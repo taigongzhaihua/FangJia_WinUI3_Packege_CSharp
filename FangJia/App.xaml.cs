@@ -1,4 +1,5 @@
-﻿using FangJia.Helpers;
+﻿using FangJia.DataAccess;
+using FangJia.Helpers;
 using FangJia.ViewModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -107,6 +108,9 @@ public partial class App
         container.RegisterType<MainPageViewModel>(new ContainerControlledLifetimeManager());
         container.RegisterType<DataViewModel>(new ContainerControlledLifetimeManager());
         container.RegisterType<SettingsViewModel>(new ContainerControlledLifetimeManager());
+        container.RegisterType<FormulationViewModel>(new ContainerControlledLifetimeManager());
+
+        container.RegisterType<FormulationManager>(new HierarchicalLifetimeManager());
     }
 
     public static Window? Window { get; private set; }
