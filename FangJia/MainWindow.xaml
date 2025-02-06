@@ -31,7 +31,7 @@
                         </DataTemplate>
                     </common:MenuItemTemplateSelector.ItemTemplate>
                 </common:MenuItemTemplateSelector>
-                <converters:BoolToMenuTextConverter x:Key="BoolToMenuTextConverter"
+                <converters:BoolToTextConverter x:Key="BoolToMenuTextConverter"
                                                     TrueText="最小化到托盘"
                                                     FalseText="打开窗口"/>
             </Grid.Resources>
