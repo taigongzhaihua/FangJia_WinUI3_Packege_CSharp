@@ -123,7 +123,7 @@
   <data name="EMail" xml:space="preserve">
     <value>taigongzhaihua@qq.vip.com</value>
   </data>
-  <data name="GithubUri" xml:space="preserve">
+  <data name="GitHubUri" xml:space="preserve">
     <value>https://github.com/taigongzhaihua/FangJia_WinUI3_Packege_CSharp</value>
   </data>
 </root>

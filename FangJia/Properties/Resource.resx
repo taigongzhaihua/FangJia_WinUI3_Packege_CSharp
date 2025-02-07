@@ -125,7 +125,7 @@
     <value>taigongzhaihua@qq.vip.com</value>
     <comment>邮箱</comment>
   </data>
-  <data name="GithubUri" xml:space="preserve">
+  <data name="GitHubUri" xml:space="preserve">
     <value>https://github.com/taigongzhaihua/FangJia_WinUI3_Packege_CSharp</value>
     <comment>github地址</comment>
   </data>
