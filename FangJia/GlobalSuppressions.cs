@@ -13,3 +13,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Performance", "CA1822:将成员标记为 static", Justification = "<挂起>", Scope = "member", Target = "~P:FangJia.Pages.AboutPage.AppArchitecture")]
 [assembly: SuppressMessage("Performance", "CA1822:将成员标记为 static", Justification = "<挂起>", Scope = "member", Target = "~P:FangJia.Pages.AboutPage.OsVersion")]
 [assembly: SuppressMessage("Performance", "CA1822:将成员标记为 static", Justification = "<挂起>", Scope = "member", Target = "~P:FangJia.Pages.AboutPage.GitHubUri")]
+[assembly: SuppressMessage("Performance", "CA1822:将成员标记为 static", Justification = "<挂起>", Scope = "member", Target = "~M:FangJia.Pages.FormulationPage.SearchBox_OnSuggestionChosen(Microsoft.UI.Xaml.Controls.AutoSuggestBox,Microsoft.UI.Xaml.Controls.AutoSuggestBoxSuggestionChosenEventArgs)")]

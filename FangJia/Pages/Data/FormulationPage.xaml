@@ -6,33 +6,64 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:common="using:FangJia.Common"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:behaviors="using:CommunityToolkit.WinUI.Behaviors"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
 
-    <Grid>
+    <Grid Padding="0,10,15,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-
+        <AutoSuggestBox Grid.Column="0" Grid.Row="0"
+                        x:Name="SearchBox"
+                        MinWidth="200" Margin="10"
+                        VerticalAlignment="Center"
+                        x:FieldModifier="public"
+                        KeyboardAcceleratorPlacementMode="Hidden"
+                        PlaceholderText="搜索"
+                        QueryIcon="Find"
+                        TextChanged="SearchBox_OnTextChanged"
+                        SuggestionChosen="SearchBox_OnSuggestionChosen"
+                        QuerySubmitted="SearchBox_OnQuerySubmitted">
+            <AutoSuggestBox.KeyboardAccelerators>
+                <KeyboardAccelerator
+                    Key="S"
+                    Modifiers="Control" />
+            </AutoSuggestBox.KeyboardAccelerators>
+        </AutoSuggestBox>
         <TreeView x:Name="FormulationCategoryTree"
-                  Grid.Column="0"
-                  Padding="10"
+                  Grid.Column="0" Grid.Row="1"
+                  Padding="10" Margin="10"
+                  CornerRadius="8"
                   ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
                   SelectionMode="Single"
-                  SelectionChanged="TreeView_OnSelectionChanged">
+                  SelectionChanged="TreeView_OnSelectionChanged"
+                  SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}">
             <TreeView.Resources>
                 <!-- ReSharper disable Xaml.RedundantResource -->
                 <Thickness x:Key="TreeViewItemPresenterMargin">8,3,16,3</Thickness>
                 <!-- ReSharper restore Xaml.RedundantResource -->
             </TreeView.Resources>
+
             <TreeView.ItemTemplate>
                 <DataTemplate x:DataType="common:FormulationCategory">
-                    <TreeViewItem Content="{x:Bind Name}"
-                                  ItemsSource="{x:Bind Children}" />
+                    <TreeViewItem Content="{x:Bind Name,Mode=TwoWay}"
+                                  ItemsSource="{x:Bind Children,Mode=TwoWay}"
+                                  IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                  IsSelected="{x:Bind IsSelected, Mode=TwoWay}" />
                 </DataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
+        <TextBlock Grid.Column="1" Grid.Row="1"
+                   Text="{x:Bind ViewModel.SelectedCategory.Name,Mode=OneWay}" />
+
     </Grid>
 </Page>

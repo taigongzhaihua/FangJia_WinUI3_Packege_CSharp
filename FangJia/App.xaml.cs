@@ -110,7 +110,7 @@ public partial class App
         container.RegisterType<SettingsViewModel>(new ContainerControlledLifetimeManager());
         container.RegisterType<FormulationViewModel>(new ContainerControlledLifetimeManager());
 
-        container.RegisterType<FormulationManager>(new HierarchicalLifetimeManager());
+        container.RegisterType<FormulationManager>(new ContainerControlledLifetimeManager());
     }
 
     public static Window? Window { get; private set; }

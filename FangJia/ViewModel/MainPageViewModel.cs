@@ -14,9 +14,11 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] private ObservableCollection<Category> _pageHeader = [];
     [ObservableProperty] private ObservableCollection<CategoryBase> _menuFolders = [];
     [ObservableProperty] private ObservableCollection<CategoryBase> _footFolders = [];
-    [ObservableProperty] private bool _isWindowVisible = true;
+    [ObservableProperty] private bool? _isWindowVisible;
+    [ObservableProperty] private string _showOrHideMenuText = "最小化到托盘";
     public MainPageViewModel()
     {
+        IsWindowVisible = true;
         var dataCategory = NavigationHelper.Categorizes["Data"] as Category;
         dataCategory!.Children =
         [
@@ -37,8 +39,13 @@ public partial class MainPageViewModel : ObservableObject
         ];
     }
 
+    partial void OnIsWindowVisibleChanged(bool? value)
+    {
+        ShowOrHideMenuText = value == true ? "最小化到托盘" : "显示主窗口";
+    }
+
     [RelayCommand]
-    public void ShowHideWindow()
+    public void ShowHideWindow(object sender)
     {
         var window = App.Window;
         if (window == null)

@@ -1,14 +1,19 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using System.Collections.ObjectModel;
 
 namespace FangJia.Common;
 
-public class FormulationCategory(int id, string name, bool isCategory)
+public partial class FormulationCategory(int id, string name, bool isCategory) : ObservableObject
 {
     public int Id { get; set; } = id;
     public string Name { get; set; } = name;
     public bool IsCategory { get; set; } = isCategory;
+
     public ObservableCollection<FormulationCategory> Children { get; set; } = [];
+    public FormulationCategory? Parent { get; set; }
+    [ObservableProperty] private bool _isExpanded = false;
+    [ObservableProperty] private bool _isSelected = false;
 }
 
 public class Formulation
