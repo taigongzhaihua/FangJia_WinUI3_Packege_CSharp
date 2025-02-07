@@ -554,4 +554,8 @@ public sealed partial class MainWindow
         ContentFrame.Navigate(NavigationHelper.GetType("LogsPage"));
     }
 
+    private void MainWindow_OnVisibilityChanged(object sender, WindowVisibilityChangedEventArgs args)
+    {
+        ShowOrHideMenuItem.Text = (bool)ViewModel.IsWindowVisible! ? "最小化到托盘" : "打开窗口";
+    }
 }

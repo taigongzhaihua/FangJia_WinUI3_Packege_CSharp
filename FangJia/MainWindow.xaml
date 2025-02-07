@@ -2,7 +2,7 @@
       encoding="utf-8"?>
 
 <!-- ReSharper disable UnusedMember.Local -->
-<Window x:Class="FangJia.MainWindow"
+<Window x:Class="FangJia.MainWindow" x:Name="Window"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -12,7 +12,8 @@
         xmlns:converters="using:FangJia.Converters"
         xmlns:system="using:System"
         mc:Ignorable="d"
-        Title="方家">
+        Title="方家"
+        VisibilityChanged="MainWindow_OnVisibilityChanged">
         <Grid x:Name="MainGrid"
               ActualThemeChanged="MainGrid_OnActualThemeChanged">
             <Grid.Resources>
@@ -122,17 +123,16 @@
                             MenuItemTemplateSelector="{StaticResource Selector}">
                 <NavigationView.Resources>
                     <!-- ReSharper disable Xaml.RedundantResource -->
-                    <!--  This top margin is the height of the custom titleBar  -->
 
+                    <!--  This top margin is the height of the custom titleBar  -->
                     <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
                     <Thickness x:Key="NavigationViewMinimalContentMargin">0,48,0,0</Thickness>
                     <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,0,0</Thickness>
                     <Thickness x:Key="NavigationViewHeaderMargin">24,32,0,12</Thickness>
                     <Thickness x:Key="NavigationViewMinimalHeaderMargin">-48,32,0,12</Thickness>
+
                     <!--  This is the rounded corner on the Top left of the L Pattern  -->
                     <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,0</CornerRadius>
-
-
                     <!-- ReSharper restore Xaml.RedundantResource -->
                 </NavigationView.Resources>
                 <NavigationView.AutoSuggestBox>
@@ -197,11 +197,9 @@
                                 ShowMode="Auto"
                                 x:Name="TrayMenuFlyout"
                                 Placement="Top">
-                        <!-- ReSharper disable once Xaml.ConstructorWarning -->
-                        <MenuFlyoutItem Text="{Binding IsWindowVisible,Converter={StaticResource BoolToMenuTextConverter}}"
-                                        Command="{x:Bind ViewModel.ShowHideWindowCommand}"
-                                        x:Name="ShowOrHideMenuItem"
-                                        DataContext="{x:Bind ViewModel}">
+                    <MenuFlyoutItem Command="{x:Bind ViewModel.ShowHideWindowCommand}"
+                                    Text="{x:Bind ViewModel.ShowOrHideMenuText,Mode=OneWay}"
+                                    x:Name="ShowOrHideMenuItem">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE737;"/>
                             </MenuFlyoutItem.Icon>
