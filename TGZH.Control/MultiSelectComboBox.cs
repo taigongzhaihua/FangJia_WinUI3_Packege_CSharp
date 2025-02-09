@@ -5,9 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace TGZH.Control;
 
@@ -268,31 +266,4 @@ public partial class MultiSelectComboBox : ComboBox
     }
 
     #endregion
-}
-
-public partial class SelectableItem : INotifyPropertyChanged
-{
-    public bool IsSelected
-    {
-        get => field;
-        set
-        {
-            field = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public string DisplayName { get; set; }
-
-    public override string ToString()
-    {
-        return DisplayName;
-    }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

@@ -30,7 +30,9 @@
     <IsTrimmable>False</IsTrimmable>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Themes\EditableTextBlock.xaml" />
     <None Remove="Themes\Generic.xaml" />
+    <None Remove="Themes\MultiSelectComboBox.xaml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250129-preview2" />
@@ -44,6 +46,16 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Docs\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Themes\EditableTextBlock.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Themes\MultiSelectComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   
 </Project>

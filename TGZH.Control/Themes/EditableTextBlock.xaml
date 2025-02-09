@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TGZH.Control" 
+    xmlns:converter="using:TGZH.Control.Converter">
+
+    
+
+
+    <converter:BooleanToTextWrappingConverter x:Key="BooleanToTextWrappingConverter"/>
+
+    <Style TargetType="local:EditableTextBlock">
+        <Setter Property="Padding" Value="{ThemeResource TextControlThemePadding}"/>
+        <Setter Property="BorderThickness" Value="{ThemeResource TextControlBorderThemeThickness}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:EditableTextBlock">
+                    <Grid Margin="{TemplateBinding Margin}">
+                        <Grid.Resources>
+                            <ResourceDictionary>
+                                <ResourceDictionary.ThemeDictionaries>
+                                    <ResourceDictionary x:Key="Default">
+                                        <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="HighContrast">
+                                        <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlBackgroundBaseLowBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemColorHighlightTextColorBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemColorHighlightTextColorBrush"/>
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="Light">
+                                        <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="Dark">
+                                        <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
+                                    </ResourceDictionary>
+                                </ResourceDictionary.ThemeDictionaries>
+                            </ResourceDictionary>
+                        </Grid.Resources>
+                        <VisualStateManager.VisualStateGroups>
+                            <!-- 状态组：编辑/显示状态 -->
+                            <VisualStateGroup x:Name="EditStates">
+                                <!-- 只读显示状态 -->
+                                <VisualState x:Name="DisplayState">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_SaveButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CancelButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_DisplayTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditTextBox" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- 只读状态下鼠标悬停：显示编辑按钮 -->
+                                <VisualState x:Name="PointerOverDisplay">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_SaveButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CancelButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_DisplayTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditTextBox" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- 编辑状态：显示编辑框 -->
+                                <VisualState x:Name="EditState">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_SaveButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CancelButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_DisplayTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditTextBox" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- 编辑状态下鼠标悬停：显示保存和取消按钮 -->
+                                <VisualState x:Name="PointerOverEdit">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_DisplayTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditTextBox" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_SaveButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CancelButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="DoubleClickModeEdit">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_DisplayTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_EditTextBox" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_SaveButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CancelButton" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+
+                            <!-- 状态组：验证状态 -->
+                            <VisualStateGroup x:Name="ValidationStates">
+                                <!-- 验证通过 -->
+                                <VisualState x:Name="Valid">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_ErrorTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- 验证失败 -->
+                                <VisualState x:Name="ValidationError">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_ErrorTextBlock" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <!-- 例如可增加编辑框边框颜色变化 -->
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <!-- 布局定义 -->
+                        <Grid MinHeight="36"
+                              RequestedTheme="{TemplateBinding ActualTheme}">
+                            <!-- 用于显示文本（只读时显示） -->
+                            <TextBlock x:Name="PART_DisplayTextBlock"
+                                       Text="{TemplateBinding Text}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Stretch"
+                                       TextWrapping="{Binding RelativeSource={RelativeSource TemplatedParent},Path=IsMultiLine,Converter={StaticResource BooleanToTextWrappingConverter}}"
+                                       Padding="{TemplateBinding Padding }"
+                                       Margin="{TemplateBinding BorderThickness}"/>
+                            <!-- 用于编辑文本（编辑时显示） -->
+                            <TextBox x:Name="PART_EditTextBox"
+                                     Text="{TemplateBinding Text}"
+                                     PlaceholderText="{TemplateBinding Placeholder}"
+                                     VerticalAlignment="Center"
+                                     HorizontalAlignment="Stretch"
+                                     Visibility="Collapsed"
+                                     AcceptsReturn="{TemplateBinding IsMultiLine}"
+                                     TextWrapping="{Binding RelativeSource={RelativeSource TemplatedParent},Path=IsMultiLine,Converter={StaticResource BooleanToTextWrappingConverter}}"
+                                     Padding="{TemplateBinding Padding}"
+                                     BorderThickness="{TemplateBinding BorderThickness}"/>
+                        </Grid>
+
+                        <!-- 浮动按钮 -->
+                        <!-- 编辑按钮（只读状态下鼠标悬停时出现） -->
+                        <Button x:Name="PART_EditButton"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="2"
+                                Padding="4"
+                                Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <FontIcon Glyph="&#xE932;" FontSize="12" />
+                                <TextBlock Text="编辑" FontSize="12" Margin="4,0,0,0"/>
+                            </StackPanel>
+                            
+                        </Button>
+                        <!-- 保存和取消按钮（编辑状态下鼠标悬停时出现） -->
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,8,-30">
+                            <Button x:Name="PART_SaveButton"
+                                    Visibility="Collapsed"
+                                    Padding="4"
+                                    Style="{ThemeResource AccentButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" />
+                                    <TextBlock Text="保存" FontSize="12" Margin="4,0,0,0"/>
+                                </StackPanel>
+                                
+                            </Button>
+                            <Button x:Name="PART_CancelButton"
+                                    Margin="8,0,0,0"
+                                    Padding="4"
+                                    Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                    <TextBlock Text="取消" FontSize="12" Margin="4,0,0,0"/>
+                                </StackPanel>
+                                
+                            </Button>
+                        </StackPanel>
+
+                        <!-- 显示错误提示（验证失败时显示） -->
+                        <TextBlock x:Name="PART_ErrorTextBlock"
+                                   Text="{TemplateBinding ErrorMessage}"
+                                   Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                   FontSize="12"
+                                   Margin="0,0,0,-20"
+                                   Visibility="Collapsed"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Bottom"
+                                   RequestedTheme="{TemplateBinding ActualTheme}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

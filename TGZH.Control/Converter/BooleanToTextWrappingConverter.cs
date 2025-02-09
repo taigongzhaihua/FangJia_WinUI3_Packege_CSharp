@@ -4,25 +4,23 @@ using System;
 
 namespace TGZH.Control.Converter;
 
-internal partial class BooleanToVisibilityConverter : IValueConverter
-
+internal partial class BooleanToTextWrappingConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is bool b)
         {
-            return b ? Visibility.Visible : Visibility.Collapsed;
+            return b ? TextWrapping.Wrap : TextWrapping.NoWrap;
         }
-
-        return null!;
+        return null;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
-        if (value is Visibility v)
+        if (value is TextWrapping v)
         {
-            return v == Visibility.Visible;
+            return v == TextWrapping.Wrap;
         }
-        return null!;
+        return null;
     }
 }

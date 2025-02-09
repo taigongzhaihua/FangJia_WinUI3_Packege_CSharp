@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TGZH.Control"
+    xmlns:converter="using:TGZH.Control.Converter"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:behaviors="using:CommunityToolkit.WinUI.Behaviors">
+
+
+    <converter:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    <x:Double x:Key="MultiSelectListViewMaxHeight">500.0</x:Double>
+
+    <!-- MultiSelectComboBox 默认样式 -->
+    <Style TargetType="local:MultiSelectComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:MultiSelectComboBox">
+                    <Grid>
+                        <!-- 使用ToggleSplitButton替代原来的ToggleButton -->
+                        <ToggleSplitButton x:Name="SplitButton"
+                                           IsTabStop="false"
+                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+
+                                           Background="Transparent">
+
+                            <!-- 主按钮内容 -->
+                            <ToggleSplitButton.Content>
+                                <TextBlock Text="{TemplateBinding SelectedItemsText}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="{TemplateBinding MaxTextWidth}" />
+                            </ToggleSplitButton.Content>
+
+                            <!-- 下拉内容 -->
+                            <ToggleSplitButton.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft" x:Name="Flyout">
+                                    <!-- 选项列表 -->
+                                    <ListView x:Name="MultiSelectListView"
+                                              ItemsSource="{TemplateBinding ItemsSource}"
+                                              SelectionMode="Multiple"
+                                              MaxHeight="{ThemeResource MultiSelectListViewMaxHeight}">
+                                        <ListView.Header>
+                                            <!-- 操作按钮区域 -->
+                                            <Grid Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}">
+                                                <interactivity:Interaction.Behaviors>
+                                                    <behaviors:StickyHeaderBehavior />
+                                                </interactivity:Interaction.Behaviors>
+
+                                                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                                                    <Button x:Name="SelectAllButton"
+                                                            Content="全选"
+                                                            Margin="4"
+                                                            Visibility="{Binding IsSelectAllEnabled, Converter={StaticResource BoolToVisibilityConverter}, RelativeSource={RelativeSource TemplatedParent}}" />
+
+                                                    <Button x:Name="InvertSelectionButton"
+                                                            Content="反选"
+                                                            Margin="4"
+                                                            Visibility="{Binding IsInvertSelectionEnabled, Converter={StaticResource BoolToVisibilityConverter}, RelativeSource={RelativeSource TemplatedParent}}" />
+                                                </StackPanel>
+                                            </Grid>
+
+                                        </ListView.Header>
+                                    </ListView>
+                                </Flyout>
+                            </ToggleSplitButton.Flyout>
+                        </ToggleSplitButton>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
