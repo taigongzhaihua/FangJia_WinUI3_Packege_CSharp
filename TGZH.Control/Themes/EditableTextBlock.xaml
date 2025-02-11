@@ -16,13 +16,21 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:EditableTextBlock">
+
+                    
                     <Grid Margin="{TemplateBinding Margin}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <Grid.Resources>
+                            <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
                             <ResourceDictionary>
                                 <ResourceDictionary.ThemeDictionaries>
                                     <ResourceDictionary x:Key="Default">
                                         <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
-                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                         <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="HighContrast">
@@ -32,16 +40,17 @@
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="Light">
                                         <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
-                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                         <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="Dark">
                                         <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlChromeHighAcrylicWindowMediumBrush"/>
-                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeMediumAcrylicWindowMediumBrush"/>
+                                        <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                         <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemControlChromeLowAcrylicWindowBrush"/>
                                     </ResourceDictionary>
                                 </ResourceDictionary.ThemeDictionaries>
                             </ResourceDictionary>
+                            <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
                         </Grid.Resources>
                         <VisualStateManager.VisualStateGroups>
                             <!-- 状态组：编辑/显示状态 -->
@@ -171,7 +180,19 @@
                         </VisualStateManager.VisualStateGroups>
 
                         <!-- 布局定义 -->
+
+                        <!-- Header 显示区 -->
+                        <ContentPresenter x:Name="PART_HeaderContentPresenter"
+                                          Grid.Row="0"
+                                          Content="{TemplateBinding Header}"
+                                          Margin="0,0,0,3"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Stretch"
+                                          VerticalContentAlignment="Center"
+                                          FontWeight="SemiBold"
+                                          MinHeight="30"/>
                         <Grid MinHeight="36"
+                              Grid.Row="1"
                               RequestedTheme="{TemplateBinding ActualTheme}">
                             <!-- 用于显示文本（只读时显示） -->
                             <TextBlock x:Name="PART_DisplayTextBlock"
@@ -197,9 +218,10 @@
                         <!-- 浮动按钮 -->
                         <!-- 编辑按钮（只读状态下鼠标悬停时出现） -->
                         <Button x:Name="PART_EditButton"
+                                Grid.Row="1"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Top"
-                                Margin="2"
+                                Margin="8,4"
                                 Padding="4"
                                 Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
@@ -209,7 +231,8 @@
                             
                         </Button>
                         <!-- 保存和取消按钮（编辑状态下鼠标悬停时出现） -->
-                        <StackPanel Orientation="Horizontal"
+                        <StackPanel Grid.Row="1"
+                            Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"
                                     Margin="0,0,8,-30">
@@ -237,10 +260,11 @@
 
                         <!-- 显示错误提示（验证失败时显示） -->
                         <TextBlock x:Name="PART_ErrorTextBlock"
+                                   Grid.Row="2"
                                    Text="{TemplateBinding ErrorMessage}"
                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                    FontSize="12"
-                                   Margin="0,0,0,-20"
+                                   Margin="0,5,0,5"
                                    Visibility="Collapsed"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Bottom"

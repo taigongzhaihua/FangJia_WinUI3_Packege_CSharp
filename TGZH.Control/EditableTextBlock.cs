@@ -25,7 +25,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 显示或编辑的文本内容
     public static readonly DependencyProperty TextProperty =
         DependencyProperty.Register(nameof(Text), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
-
     public string Text
     {
         get => (string)GetValue(TextProperty);
@@ -35,7 +34,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 编辑命令
     public static readonly DependencyProperty EditCommandProperty =
         DependencyProperty.Register(nameof(EditCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-
     public ICommand EditCommand
     {
         get => (ICommand)GetValue(EditCommandProperty);
@@ -45,7 +43,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 保存命令
     public static readonly DependencyProperty SaveCommandProperty =
         DependencyProperty.Register(nameof(SaveCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-
     public ICommand SaveCommand
     {
         get => (ICommand)GetValue(SaveCommandProperty);
@@ -55,7 +52,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 取消命令
     public static readonly DependencyProperty CancelCommandProperty =
         DependencyProperty.Register(nameof(CancelCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-
     public ICommand CancelCommand
     {
         get => (ICommand)GetValue(CancelCommandProperty);
@@ -65,7 +61,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 是否必须输入（验证用）
     public static readonly DependencyProperty IsRequiredProperty =
         DependencyProperty.Register(nameof(IsRequired), typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(false));
-
     public bool IsRequired
     {
         get => (bool)GetValue(IsRequiredProperty);
@@ -75,7 +70,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 错误提示信息（验证失败时显示）
     public static readonly DependencyProperty ErrorMessageProperty =
         DependencyProperty.Register(nameof(ErrorMessage), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
-
     public string ErrorMessage
     {
         get => (string)GetValue(ErrorMessageProperty);
@@ -85,7 +79,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 是否启用多行编辑
     public static readonly DependencyProperty IsMultiLineProperty =
         DependencyProperty.Register(nameof(IsMultiLine), typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(false));
-
     public bool IsMultiLine
     {
         get => (bool)GetValue(IsMultiLineProperty);
@@ -95,7 +88,6 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 占位符文本
     public static readonly DependencyProperty PlaceholderProperty =
         DependencyProperty.Register(nameof(Placeholder), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
-
     public string Placeholder
     {
         get => (string)GetValue(PlaceholderProperty);
@@ -105,13 +97,54 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     // 交互模式：按钮模式或双击模式，默认按钮模式
     public static readonly DependencyProperty InteractionModeProperty =
         DependencyProperty.Register(nameof(InteractionMode), typeof(EditableTextBlockInteractionMode), typeof(EditableTextBlock),
-            new PropertyMetadata(EditableTextBlockInteractionMode.Button));
-
+            new PropertyMetadata(EditableTextBlockInteractionMode.Button, OnInteractionModeChanged));
     public EditableTextBlockInteractionMode InteractionMode
     {
         get => (EditableTextBlockInteractionMode)GetValue(InteractionModeProperty);
         set => SetValue(InteractionModeProperty, value);
     }
+    private static void OnInteractionModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = d as EditableTextBlock;
+        if (control == null) return;
+        switch (control.InteractionMode)
+        {
+            // 按钮模式下使用鼠标进入/离开切换视觉状态
+            case EditableTextBlockInteractionMode.Button:
+                control.PointerEntered -= control.EditableTextBlock_PointerEntered;
+                control.PointerExited -= control.EditableTextBlock_PointerExited;
+                control.DoubleTapped -= control.EditableTextBlock_DoubleTapped;
+                control.PointerEntered += control.EditableTextBlock_PointerEntered;
+                control.PointerExited += control.EditableTextBlock_PointerExited;
+                break;
+            // 双击模式下使用双击切换编辑状态
+            case EditableTextBlockInteractionMode.DoubleClick:
+                control.PointerEntered -= control.EditableTextBlock_PointerEntered;
+                control.PointerExited -= control.EditableTextBlock_PointerExited;
+                control.DoubleTapped -= control.EditableTextBlock_DoubleTapped;
+                control.DoubleTapped += control.EditableTextBlock_DoubleTapped;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(d));
+        }
+    }
+
+    /// <summary>
+    /// 控件的标题或说明内容，可以是字符串或者任意 UI 元素。
+    /// </summary>
+    public static readonly DependencyProperty HeaderProperty =
+        DependencyProperty.Register(
+            nameof(Header),
+            typeof(object),
+            typeof(EditableTextBlock),
+            new PropertyMetadata(null));
+
+    public object Header
+    {
+        get => GetValue(HeaderProperty);
+        set => SetValue(HeaderProperty, value);
+    }
+
     #endregion
 
     #region 模板部件名称
@@ -122,6 +155,7 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     private const string PartSaveButton = "PART_SaveButton";
     private const string PartCancelButton = "PART_CancelButton";
     private const string PartErrorTextBlock = "PART_ErrorTextBlock";
+    private const string PartHeaderContentPresenter = "PART_HeaderContentPresenter";
 
     #endregion
 
@@ -133,6 +167,7 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     private Button _saveButton;
     private Button _cancelButton;
     private TextBlock _errorTextBlock;
+    private ContentPresenter _headerContentPresenter;
 
     // 标识当前是否处于编辑状态
     private bool _isEditing;
@@ -220,6 +255,7 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
         _saveButton = GetTemplateChild(PartSaveButton) as Button;
         _cancelButton = GetTemplateChild(PartCancelButton) as Button;
         _errorTextBlock = GetTemplateChild(PartErrorTextBlock) as TextBlock;
+        _headerContentPresenter = GetTemplateChild(PartHeaderContentPresenter) as ContentPresenter;
 
         // 同步显示文本与占位符、换行等属性
         if (_displayTextBlock != null)
