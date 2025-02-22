@@ -33,7 +33,7 @@ namespace FangJia.Helpers
                     }
                 }
 
-                return App.GetEnum<ElementTheme>(Application.Current.RequestedTheme.ToString());
+                return EnumHelper.GetEnum<ElementTheme>(Application.Current.RequestedTheme.ToString());
             }
         }
 
@@ -101,7 +101,7 @@ namespace FangJia.Helpers
 
             if (savedTheme != null)
             {
-                RootTheme = App.GetEnum<ElementTheme>(savedTheme);
+                RootTheme = EnumHelper.GetEnum<ElementTheme>(savedTheme);
             }
 
         }
@@ -125,7 +125,7 @@ namespace FangJia.Helpers
                 {
                     window!.SystemBackdrop = new MicaBackdrop
                     {
-                        Kind = MicaKind.Base
+                        Kind = MicaKind.BaseAlt
                     };
                     panel!.Background = new SolidColorBrush(Colors.Transparent);
                 }

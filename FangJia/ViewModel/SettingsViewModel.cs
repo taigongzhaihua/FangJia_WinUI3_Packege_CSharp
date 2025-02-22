@@ -8,10 +8,10 @@ namespace FangJia.ViewModel
     public partial class SettingsViewModel : ObservableObject
     {
         private const string CloseModeKey = "MainWindowCloseMode";
-        [ObservableProperty] private string? _themeMode = ThemeHelper.RootTheme.ToString();
-        [ObservableProperty] private bool _isMicaTheme = ThemeHelper.IsMicaTheme;
-        [ObservableProperty] private string? _logWriteLevel = LogHelper.LogLevel.Name;
-        [ObservableProperty] private string? _closeMode = ApplicationData.Current.LocalSettings.Values[CloseModeKey]?.ToString() ?? "Default";
+        [ObservableProperty] public partial string? ThemeMode { get; set; } = ThemeHelper.RootTheme.ToString();
+        [ObservableProperty] public partial bool IsMicaTheme { get; set; } = ThemeHelper.IsMicaTheme;
+        [ObservableProperty] public partial string? LogWriteLevel { get; set; } = LogHelper.LogLevel.Name;
+        [ObservableProperty] public partial string? CloseMode { get; set; } = ApplicationData.Current.LocalSettings.Values[CloseModeKey]?.ToString() ?? "Default";
 
         partial void OnIsMicaThemeChanged(bool value)
         {

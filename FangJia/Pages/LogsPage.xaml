@@ -5,12 +5,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:FangJia.Pages"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:FangJia.Helpers"
     xmlns:converters="using:FangJia.Converters"
-    xmlns:system="using:System"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}"
     NavigationCacheMode="Disabled">
@@ -68,18 +66,18 @@
                     <DataTemplate x:DataType="helpers:LogItem">
                         <!-- 为每个项创建一个 TextBlock，
                  将整个数据对象绑定到 Tag 属性上 -->
-                        <TextBlock x:Name="ItemTextBlock" Tag="{Binding}" TextWrapping="Wrap">
+                        <TextBlock x:Name="ItemTextBlock" Tag="{x:Bind}" TextWrapping="NoWrap" TextTrimming="WordEllipsis">
                             <TextBlock.Inlines>
                                 <!-- 每个 Run 通过 ElementName 引用当前 TextBlock 的 Tag 对象 -->
-                                <Run Text="["></Run>
+                                <Run Text="["/>
                                 <Run Text="{Binding Tag.TimestampUtc, ElementName=ItemTextBlock,Converter={StaticResource DateTimeToStringConverter}}" Foreground="Gray"/>
-                                <Run Text="]    ["></Run>
+                                <Run Text="]    ["/>
                                 <Run Text="{Binding Tag.Level, ElementName=ItemTextBlock}" FontWeight="Bold"/>
-                                <Run Text="]&#x09;"></Run>
+                                <Run Text="]&#x09;"/>
                                 <Run Text="{Binding Tag.Logger, ElementName=ItemTextBlock}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <Run Text="&#x09;"></Run>
+                                <Run Text="&#x09;"/>
                                 <Run Text="{Binding Tag.Message, ElementName=ItemTextBlock}" Foreground="Red"/>
-                                <Run Text="&#x09;"></Run>
+                                <Run Text="&#x09;"/>
                                 <Run Text="{Binding Tag.Exception, ElementName=ItemTextBlock}" Foreground="Red"/>
                             </TextBlock.Inlines>
                         </TextBlock>

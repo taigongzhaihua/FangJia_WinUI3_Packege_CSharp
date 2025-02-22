@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Windows.Storage;
+using WinRT;
 
 
 namespace FangJia.Helpers;
@@ -25,7 +26,8 @@ public static class LogHelper
         // 检查文件是否存在
         if (!File.Exists(DatabasePath))
         {
-            Logger.Info("未找到数据库文件。正在创建新数据库...");
+            Logger.Info($"未找到数据库文件\"{DatabasePath}\"。");
+            Logger.Info("正在创建新数据库文件和日志表...");
 
             // 创建数据库文件并初始化表
             CreateDatabaseAndTable(DatabasePath);
@@ -34,7 +36,7 @@ public static class LogHelper
         }
         else
         {
-            Logger.Info("数据库文件已存在。");
+            Logger.Info($"数据库文件\"{DatabasePath}\"已存在。");
         }
     }
 
@@ -157,8 +159,8 @@ public static class LogHelper
         }
     }
 }
-
-public class LogItem
+[GeneratedBindableCustomProperty]
+public partial class LogItem
 {
     public DateTime TimestampUtc { get; set; }
     public string? Application { get; set; }
@@ -173,5 +175,5 @@ public class LogItem
         var l = $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fff}] [{Level}] {Logger}\t：{Message}";
         if (!string.IsNullOrWhiteSpace(Exception)) l += $" - {Exception}";
         return l;
- }
+    }
 }

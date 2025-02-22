@@ -1,10 +1,13 @@
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
+using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Media;
 using FangJia.Common;
 using FangJia.Helpers;
 using FangJia.ViewModel;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using NLog;
 using System;
@@ -22,13 +25,15 @@ namespace FangJia.Pages
         internal readonly FormulationViewModel ViewModel = Locator.GetService<FormulationViewModel>();
         private readonly DispatcherQueue _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public FormulationPage()
         {
             InitializeComponent();
             Task.Run(() => ViewModel.LoadCategoriesAsync(_dispatcherQueue));
+
         }
 
-        private void TreeView_OnSelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+        private void TreeView_OnSelectionChanged(TreeView _, TreeViewSelectionChangedEventArgs args)
         {
             if (args.AddedItems.FirstOrDefault() is not FormulationCategory selectedCategory) return;
             // 递归展开选中的项
@@ -116,9 +121,10 @@ namespace FangJia.Pages
             else
             {
                 // 根据输入关键字过滤数据（不区分大小写的匹配）
-                var suggestions = ViewModel.SearchWords
-                    .Where(item => item.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-                    .ToList();
+                var suggestions =
+                    ViewModel.SearchWords
+                        .Where(item => item.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+                        .ToList();
 
                 sender.ItemsSource = suggestions;
             }
@@ -141,9 +147,9 @@ namespace FangJia.Pages
                 if (string.IsNullOrEmpty(query)) return;
 
                 // 精确匹配优先，再找包含项
-                var targetNode = ViewModel.SearchDictionary.GetValueOrDefault(query) ??
-                                 ViewModel.SearchDictionary.Values.FirstOrDefault(f =>
-                                     f.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase));
+                var targetNode = ViewModel.SearchDictionary.TryGetValue(query, out var value) ? value :
+                 ViewModel.SearchDictionary.Values.FirstOrDefault(f =>
+                     f.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase));
 
                 if (targetNode == null) return;
                 {
@@ -170,6 +176,30 @@ namespace FangJia.Pages
             catch (Exception e)
             {
                 Logger.Error($"搜索时出错：{e.Message}", e);
+            }
+        }
+
+        private void PaneOpenOrCloseButton_OnClick(object _, RoutedEventArgs _1)
+        {
+            SplitView.IsPaneOpen = !SplitView.IsPaneOpen;
+        }
+
+
+        private void OnAdaptiveStatesCurrentStateChanged(object _, VisualStateChangedEventArgs e)
+        {
+            switch (e.NewState.Name)
+            {
+                case "WideState":
+                    Effects.SetShadow(Border, null!);
+                    break;
+                case "NarrowState":
+                    Effects.SetShadow(Border, new AttachedCardShadow
+                    {
+                        Opacity = 0.2,
+                        BlurRadius = 8,
+                        Offset = "2"
+                    });
+                    break;
             }
         }
     }

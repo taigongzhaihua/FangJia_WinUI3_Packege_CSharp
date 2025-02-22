@@ -10,12 +10,12 @@ namespace FangJia.ViewModel;
 
 public partial class MainPageViewModel : ObservableObject
 {
-    [ObservableProperty] private bool _isFullScreen;
-    [ObservableProperty] private ObservableCollection<Category> _pageHeader = [];
-    [ObservableProperty] private ObservableCollection<CategoryBase> _menuFolders = [];
-    [ObservableProperty] private ObservableCollection<CategoryBase> _footFolders = [];
-    [ObservableProperty] private bool? _isWindowVisible;
-    [ObservableProperty] private string _showOrHideMenuText = "最小化到托盘";
+    [ObservableProperty] public partial bool IsFullScreen { get; set; }
+    [ObservableProperty] public partial ObservableCollection<Category> PageHeader { get; set; } = [];
+    [ObservableProperty] public partial ObservableCollection<CategoryBase> MenuFolders { get; set; } = [];
+    [ObservableProperty] public partial ObservableCollection<CategoryBase> FootFolders { get; set; } = [];
+    [ObservableProperty] public partial bool? IsWindowVisible { get; set; }
+    [ObservableProperty] public partial string ShowOrHideMenuText { get; set; } = "最小化到托盘";
     public MainPageViewModel()
     {
         IsWindowVisible = true;
@@ -36,6 +36,10 @@ public partial class MainPageViewModel : ObservableObject
         [
             NavigationHelper.Categorizes["About"],
             NavigationHelper.Categorizes["Separator"]
+        ];
+        PageHeader =
+        [
+            NavigationHelper.Categorizes["Home"] as Category ?? new Category()
         ];
     }
 

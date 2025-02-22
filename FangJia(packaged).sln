@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35617.110
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FangJia", "FangJia\FangJia.csproj", "{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TGZH.Control", "TGZH.Control\TGZH.Control.csproj", "{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -33,6 +35,18 @@ Global
 		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.ActiveCfg = Release|x86
 		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.Build.0 = Release|x86
 		{C5F93F1E-9819-464C-A012-C3CC19ED6A2E}.Release|x86.Deploy.0 = Release|x86
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|x64.Build.0 = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Debug|x86.Build.0 = Debug|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|ARM64.Build.0 = Release|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x64.ActiveCfg = Release|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x64.Build.0 = Release|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x86.ActiveCfg = Release|Any CPU
+		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

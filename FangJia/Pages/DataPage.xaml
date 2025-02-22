@@ -12,10 +12,9 @@
     Background="{ThemeResource  ControlAltFillColorTransparentBrush}">
 
     <Grid>
-        <GridView x:Name="collection" IsItemClickEnabled="False" HorizontalAlignment="Center" MaxWidth="1000"
-                  ItemsSource="{x:Bind ViewModel.Data}"
-                  SelectionMode="None"
-                  >
+        <GridView x:Name="Collection" IsItemClickEnabled="False" HorizontalAlignment="Center" MaxWidth="1000"
+                  ItemsSource="{x:Bind ViewModel.Data,Mode=OneWay}"
+                  SelectionMode="None">
             <GridView.ItemContainerStyle>
                 <Style TargetType="GridViewItem">
                     <Style.Setters>
@@ -34,13 +33,13 @@
                     <controls:SettingsCard Width="450"
                                            Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                                            BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
-                                           Description="{Binding Tooltip}"
-                                           Header="{Binding Name}"
+                                           Description="{x:Bind Tooltip}"
+                                           Header="{x:Bind Name}"
                                            IsClickEnabled="True"
                                            Click="ButtonBase_OnClick"
-                                           Tag="{Binding Path}">
+                                           Tag="{x:Bind Path}">
                         <controls:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="{Binding Glyph}"
+                            <FontIcon Glyph="{x:Bind Glyph}"
                                       FontSize="50"/>
                         </controls:SettingsCard.HeaderIcon>
                     </controls:SettingsCard>

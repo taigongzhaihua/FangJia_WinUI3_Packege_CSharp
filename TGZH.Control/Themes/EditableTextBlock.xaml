@@ -8,16 +8,14 @@
     
 
 
-    <converter:BooleanToTextWrappingConverter x:Key="BooleanToTextWrappingConverter"/>
-
-    <Style TargetType="local:EditableTextBlock">
+    <converter:BooleanToTextWrappingConverter x:Key="BooleanToTextWrappingConverter"/>  
+    <Style TargetType="local:EditableTextBlock" BasedOn="{StaticResource DefaultEditableTextBlockStyle}"/>
+    <Style TargetType="local:EditableTextBlock" x:Key="DefaultEditableTextBlockStyle">
         <Setter Property="Padding" Value="{ThemeResource TextControlThemePadding}"/>
         <Setter Property="BorderThickness" Value="{ThemeResource TextControlBorderThemeThickness}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:EditableTextBlock">
-
-                    
                     <Grid Margin="{TemplateBinding Margin}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -196,16 +194,32 @@
                               RequestedTheme="{TemplateBinding ActualTheme}">
                             <!-- 用于显示文本（只读时显示） -->
                             <TextBlock x:Name="PART_DisplayTextBlock"
-                                       Text="{TemplateBinding Text}"
-                                       VerticalAlignment="Center"
+                                       Text="{Binding Text,RelativeSource={RelativeSource TemplatedParent}}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontStyle="{TemplateBinding FontStyle}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       FontStretch="{TemplateBinding FontStretch}"
+                                       Height="{Binding ElementName=PART_EditTextBox,Path=Height}"
+                                       TextTrimming="WordEllipsis"
+                                       VerticalAlignment="Stretch"
                                        HorizontalAlignment="Stretch"
+                                       Width="{TemplateBinding Width}"
                                        TextWrapping="{Binding RelativeSource={RelativeSource TemplatedParent},Path=IsMultiLine,Converter={StaticResource BooleanToTextWrappingConverter}}"
                                        Padding="{TemplateBinding Padding }"
                                        Margin="{TemplateBinding BorderThickness}"/>
                             <!-- 用于编辑文本（编辑时显示） -->
                             <TextBox x:Name="PART_EditTextBox"
-                                     Text="{TemplateBinding Text}"
+                                     Text="{Binding Text,RelativeSource={RelativeSource TemplatedParent}}"
+                                     Foreground="{TemplateBinding Foreground}"
                                      PlaceholderText="{TemplateBinding Placeholder}"
+                                     FontSize="{TemplateBinding FontSize}"
+                                     FontStyle="{TemplateBinding FontStyle}"
+                                     FontWeight="{TemplateBinding FontWeight}"
+                                     FontFamily="{TemplateBinding FontFamily}"
+                                     FontStretch="{TemplateBinding FontStretch}"
+                                     Width="{TemplateBinding Width}"
                                      VerticalAlignment="Center"
                                      HorizontalAlignment="Stretch"
                                      Visibility="Collapsed"

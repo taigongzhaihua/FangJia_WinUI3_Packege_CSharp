@@ -1,15 +1,12 @@
-﻿using FangJia.DataAccess;
+﻿using Autofac;
+using FangJia.DataAccess;
 using FangJia.Helpers;
 using FangJia.ViewModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using NLog;
-using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity;
-using Unity.Lifetime;
 
 #pragma warning disable CA1416
 
@@ -49,12 +46,14 @@ public partial class App
         InitializeComponent();
 
         // 1. 注册服务：将服务注册到 Unity 容器中，此操作必须在应用创建时完成。而不能在 OnLaunched 事件中完成。
-        var container = new UnityContainer(); // 创建一个Unity容器
-        RegisterServices(container); // 注册服务
+        var container = BuildContainer(); // 构建容器
         Locator.Initialize(container);
 
         // 2. 初始化日志：将日志的初始化放在最前面，以确保日志记录器在整个应用程序生命周期内都可用。
         LogHelper.Initialize();
+
+        // 3. 初始化数据：初始化数据管理器，加载数据。
+        DataManager.Initialize();
     }
 
     /// <summary>
@@ -99,38 +98,28 @@ public partial class App
         ThemeHelper.Initialize();
         TitleBarHelper.ApplySystemThemeToCaptionButtons(Window);
     }
-    /// <summary>
-    /// 注册服务
-    /// </summary>
-    /// <param name="container">容器</param>
-    private static void RegisterServices(UnityContainer container)
-    {
-        container.RegisterType<MainPageViewModel>(new ContainerControlledLifetimeManager());
-        container.RegisterType<DataViewModel>(new ContainerControlledLifetimeManager());
-        container.RegisterType<SettingsViewModel>(new ContainerControlledLifetimeManager());
-        container.RegisterType<FormulationViewModel>(new ContainerControlledLifetimeManager());
 
-        container.RegisterType<FormulationManager>(new ContainerControlledLifetimeManager());
+    /// <summary>
+    /// 使用 Autofac 注册服务，并构建容器
+    /// </summary>
+    /// <returns>构建完成的 Autofac 容器</returns>
+    public static IContainer BuildContainer()
+    {
+        var builder = new ContainerBuilder();
+
+        // 注册各个 ViewModel 和 Manager，并指定单例生命周期（等同于 Unity 的 ContainerControlledLifetimeManager）
+        builder.RegisterType<MainPageViewModel>().SingleInstance();
+        builder.RegisterType<DataViewModel>().SingleInstance();
+        builder.RegisterType<SettingsViewModel>().SingleInstance();
+        builder.RegisterType<FormulationViewModel>().SingleInstance();
+
+        builder.RegisterType<FormulationManager>().InstancePerLifetimeScope();
+
+        return builder.Build();
     }
 
     public static Window? Window { get; private set; }
     public static bool HandleClosedEvents { get; set; } = true;
-    /// <summary>
-    /// 从字符串转换为枚举。
-    /// </summary>
-    /// <typeparam name="TEnum">枚举类型。</typeparam>
-    /// <param name="text">要转换的字符串。</param>
-    /// <returns>枚举值。</returns>
-    /// <exception cref="InvalidOperationException">如果泛型参数 'TEnum' 不是枚举，则抛出异常。</exception>
-    public static TEnum GetEnum<TEnum>(string? text) where TEnum : struct
-    {
-        if (!typeof(TEnum).GetTypeInfo().IsEnum)
-        {
-            throw new InvalidOperationException("Generic parameter 'TEnum' must be an enum.");
-        }
-
-        return (TEnum)Enum.Parse(typeof(TEnum), text!);
-    }
 
     /// <summary>
     /// 释放资源。

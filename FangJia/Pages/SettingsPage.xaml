@@ -7,9 +7,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:local="using:FangJia.ViewModel"
     mc:Ignorable="d"
     Background="{ThemeResource  ControlAltFillColorTransparentBrush}"
-    NavigationCacheMode="Enabled">
+    NavigationCacheMode="Enabled" x:DataType="local:SettingsViewModel">
 
     <ScrollView>
         <StackPanel Margin="24">
@@ -17,8 +18,7 @@
                        Style="{ThemeResource SubtitleTextBlockStyle}"
                        Margin="0,12"/>
             <controls:SettingsCard Description="选择应用主题" Header="应用主题"
-                                   CornerRadius="8,8,0,0"
-                                   >
+                                   CornerRadius="8,8,0,0">
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE790;" />
                 </controls:SettingsCard.HeaderIcon>
@@ -26,8 +26,8 @@
                     x:Name="ThemeMode"
                     AutomationProperties.AutomationId="themeModeComboBox"
                     SelectionChanged="ThemeMode_SelectionChanged"
-                    SelectedValuePath="Tag"
-                    SelectedValue="{x:Bind ViewModel.ThemeMode,Mode=TwoWay}">
+                    SelectedValuePath="Tag" 
+                    SelectedValue="{x:Bind ViewModel.ThemeMode,Mode=TwoWay,FallbackValue=0}">
                     <ComboBoxItem Content="亮色" Tag="Light" />
                     <ComboBoxItem Content="暗色" Tag="Dark" />
                     <ComboBoxItem Content="跟随系统" Tag="Default" />
@@ -50,8 +50,6 @@
                     <FontIcon Glyph="&#xE8C4;" />
                 </controls:SettingsCard.HeaderIcon>
                 <ComboBox
-                    x:Name="LogLevel"
-                    AutomationProperties.AutomationId="themeModeComboBox"
                     SelectedValuePath="Tag"
                     SelectedValue="{x:Bind ViewModel.LogWriteLevel,Mode=TwoWay}">
                     <ComboBoxItem Content="调试" Tag="Debug" />

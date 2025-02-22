@@ -24,7 +24,17 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
 
     // 显示或编辑的文本内容
     public static readonly DependencyProperty TextProperty =
-        DependencyProperty.Register(nameof(Text), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
+        DependencyProperty.Register(nameof(Text), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty, OnTextChanged));
+
+    private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = d as EditableTextBlock;
+        if (control == null) return;
+        if (control._displayTextBlock == null) return;
+        control._displayTextBlock.Text = control.Text;
+        control._editTextBox.Text = control.Text;
+    }
+
     public string Text
     {
         get => (string)GetValue(TextProperty);
@@ -137,7 +147,17 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
             nameof(Header),
             typeof(object),
             typeof(EditableTextBlock),
-            new PropertyMetadata(null));
+            new PropertyMetadata(null, OnHeaderChanged));
+
+    private static void OnHeaderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = d as EditableTextBlock;
+        if (control == null) return;
+        if (control.Header == null)
+        {
+            control._headerContentPresenter.Visibility = Visibility.Collapsed;
+        }
+    }
 
     public object Header
     {
@@ -256,6 +276,11 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
         _cancelButton = GetTemplateChild(PartCancelButton) as Button;
         _errorTextBlock = GetTemplateChild(PartErrorTextBlock) as TextBlock;
         _headerContentPresenter = GetTemplateChild(PartHeaderContentPresenter) as ContentPresenter;
+
+        if (_headerContentPresenter != null)
+        {
+            _headerContentPresenter.Visibility = Header == null ? Visibility.Collapsed : Visibility.Visible;
+        }
 
         // 同步显示文本与占位符、换行等属性
         if (_displayTextBlock != null)

@@ -7,7 +7,7 @@ using System;
 
 namespace FangJia.Converters;
 
-public class BoolToNavigateBackVisible : IValueConverter
+public partial class BoolToNavigateBackVisible : IValueConverter
 
 {
     public object Convert(object value, Type targetType, object parameter, string language)

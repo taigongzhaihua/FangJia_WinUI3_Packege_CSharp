@@ -23,12 +23,12 @@ public sealed partial class SettingsPage
         InitializeComponent();
     }
 
-    private void ThemeMode_SelectionChanged(object sender, RoutedEventArgs e)
+    private void ThemeMode_SelectionChanged(object sender, RoutedEventArgs _)
     {
         var selectedTheme = ((ComboBoxItem)ThemeMode.SelectedItem)?.Tag?.ToString();
         var window = WindowHelper.GetWindowForElement(this);
         if (selectedTheme == null) return;
-        ThemeHelper.RootTheme = App.GetEnum<ElementTheme>(selectedTheme);
+        ThemeHelper.RootTheme = EnumHelper.GetEnum<ElementTheme>(selectedTheme);
         string color;
         switch (selectedTheme)
         {
@@ -49,12 +49,12 @@ public sealed partial class SettingsPage
             "ThemeChangedNotificationActivityId");
     }
 
-    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+    private void ButtonBase_OnClick(object _, RoutedEventArgs _1)
     {
         PipeHelper.RestartApp();
     }
 
-    private void ButtonLog_OnClick(object sender, RoutedEventArgs e)
+    private void ButtonLog_OnClick(object sender, RoutedEventArgs _)
     {
         if (sender is SettingsCard card)
         {

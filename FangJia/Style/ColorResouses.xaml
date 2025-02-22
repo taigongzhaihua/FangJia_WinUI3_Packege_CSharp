@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+    <AcrylicBrush x:Key="AcrylicBlackBrush" TintOpacity="0.2" TintLuminosityOpacity="0.2" TintColor="#88000000" FallbackColor="#88000000" TintTransitionDuration="100"></AcrylicBrush>
+    <AcrylicBrush x:Key="AcrylicWhiteBrush" TintOpacity="0.2" TintLuminosityOpacity="0.2" TintColor="#88FFFFFF" FallbackColor="#88FFFFFF" TintTransitionDuration="100"></AcrylicBrush>
+</ResourceDictionary>

@@ -6,64 +6,359 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:common="using:FangJia.Common"
+    xmlns:control="using:TGZH.Control"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
     xmlns:behaviors="using:CommunityToolkit.WinUI.Behaviors"
+    xmlns:converters="using:FangJia.Converters"
+    xmlns:animatedVisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
+    xmlns:winUi="using:CommunityToolkit.WinUI"
+    xmlns:media="using:CommunityToolkit.WinUI.Media"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
+    <Page.Resources>
+        <common:FormulationCategoryItemTemplateSelector x:Key="CategoryItemTemplateSelector">
+            <DataTemplate x:DataType="common:FormulationCategory">
+                <TreeViewItem Content="{x:Bind Name, Mode=TwoWay}"
+                              ItemsSource="{x:Bind Children,Mode=TwoWay}"
+                              IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                              IsSelected="{x:Bind IsSelected, Mode=TwoWay}" />
+            </DataTemplate>
+        </common:FormulationCategoryItemTemplateSelector>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter"></converters:BooleanToVisibilityFallbackConverter>
+        <converters:ByteArrayToImgConverter x:Key="ByteArrayToImgConverter" />
+        <media:AttachedCardShadow x:Key="ViewerShadow" BlurRadius="8" Opacity="0.2" Offset="2" />
+    </Page.Resources>
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="AdaptiveStates" CurrentStateChanged="OnAdaptiveStatesCurrentStateChanged">
+                <!-- 宽屏状态：面板始终显示，且为内嵌模式 -->
+                <VisualState x:Name="WideState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="940" />
+                    </VisualState.StateTriggers>
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
+                                                       Storyboard.TargetProperty="DisplayMode">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Inline" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
+                                                       Storyboard.TargetProperty="IsPaneOpen">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="True" />
+                        </ObjectAnimationUsingKeyFrames>
 
-    <Grid Padding="0,10,15,20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <AutoSuggestBox Grid.Column="0" Grid.Row="0"
-                        x:Name="SearchBox"
-                        MinWidth="200" Margin="10"
-                        VerticalAlignment="Center"
-                        x:FieldModifier="public"
-                        KeyboardAcceleratorPlacementMode="Hidden"
-                        PlaceholderText="搜索"
-                        QueryIcon="Find"
-                        TextChanged="SearchBox_OnTextChanged"
-                        SuggestionChosen="SearchBox_OnSuggestionChosen"
-                        QuerySubmitted="SearchBox_OnQuerySubmitted">
-            <AutoSuggestBox.KeyboardAccelerators>
-                <KeyboardAccelerator
-                    Key="S"
-                    Modifiers="Control" />
-            </AutoSuggestBox.KeyboardAccelerators>
-        </AutoSuggestBox>
-        <TreeView x:Name="FormulationCategoryTree"
-                  Grid.Column="0" Grid.Row="1"
-                  Padding="10" Margin="10"
-                  CornerRadius="8"
-                  ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
-                  SelectionMode="Single"
-                  SelectionChanged="TreeView_OnSelectionChanged"
-                  SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}">
-            <TreeView.Resources>
-                <!-- ReSharper disable Xaml.RedundantResource -->
-                <Thickness x:Key="TreeViewItemPresenterMargin">8,3,16,3</Thickness>
-                <!-- ReSharper restore Xaml.RedundantResource -->
-            </TreeView.Resources>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneOpenOrCloseButton"
+                                                       Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
+                                                       Storyboard.TargetProperty="Padding">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="0" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
+                                                       Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                    Value="{ThemeResource ControlFillColorTransparentBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
+                                                       Storyboard.TargetProperty="Margin">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="20,8,20,0" />
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <!-- 窄屏状态：面板隐藏，显示呼出按钮，面板采用覆盖模式 -->
+                <VisualState x:Name="NarrowState">
+                    <VisualState.StateTriggers>
+                        <!-- 宽度小于720时进入 -->
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
+                                                       Storyboard.TargetProperty="DisplayMode">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Overlay" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
+                                                       Storyboard.TargetProperty="IsPaneOpen">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="False" />
+                        </ObjectAnimationUsingKeyFrames>
 
-            <TreeView.ItemTemplate>
-                <DataTemplate x:DataType="common:FormulationCategory">
-                    <TreeViewItem Content="{x:Bind Name,Mode=TwoWay}"
-                                  ItemsSource="{x:Bind Children,Mode=TwoWay}"
-                                  IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
-                                  IsSelected="{x:Bind IsSelected, Mode=TwoWay}" />
-                </DataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
-        <TextBlock Grid.Column="1" Grid.Row="1"
-                   Text="{x:Bind ViewModel.SelectedCategory.Name,Mode=OneWay}" />
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneOpenOrCloseButton"
+                                                       Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
+                                                       Storyboard.TargetProperty="Padding">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,38,0,0" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
+                                                       Storyboard.TargetProperty="Background">
+                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                    Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
+                                                       Storyboard.TargetProperty="Margin">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,8,0,0" />
+                        </ObjectAnimationUsingKeyFrames>
 
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Button Width="36" Height="30"
+                VerticalAlignment="Top" HorizontalAlignment="Right"
+                x:Name="PaneOpenOrCloseButton"
+                Click="PaneOpenOrCloseButton_OnClick"
+                Canvas.ZIndex="2"
+                Margin="16,12"
+                BorderThickness="0">
+            <Button.Resources>
+                <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Default">
+                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPointerOver"
+                                            ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPressed"
+                                            ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPointerOver"
+                                            ResourceKey="SystemColorHighlightTextColorBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPressed"
+                                            ResourceKey="SystemColorHighlightTextColorBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Light">
+                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPointerOver"
+                                            ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPressed"
+                                            ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPointerOver"
+                                            ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                            <StaticResource x:Key="ButtonBackgroundPressed"
+                                            ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                </ResourceDictionary>
+                <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
+            </Button.Resources>
+
+            <AnimatedIcon x:Name="SearchAnimatedIcon">
+                <AnimatedIcon.Source>
+                    <animatedVisuals:AnimatedGlobalNavigationButtonVisualSource />
+                </AnimatedIcon.Source>
+                <AnimatedIcon.FallbackIconSource>
+                    <SymbolIconSource Symbol="Find" />
+                </AnimatedIcon.FallbackIconSource>
+            </AnimatedIcon>
+        </Button>
+        <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Right"
+                   PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
+
+            <SplitView.Pane>
+                <Grid x:Name="BorderParent">
+                    <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
+                            Margin="8,8,0,0"
+                            BorderThickness="0" Canvas.ZIndex="1" >
+                        <Grid x:Name="PaneGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <AutoSuggestBox x:Name="SearchBox" Grid.Row="0" MinWidth="200" Margin="10,0,10,10"
+                                            VerticalAlignment="Center" x:FieldModifier="public"
+                                            KeyboardAcceleratorPlacementMode="Hidden" PlaceholderText="搜索"
+                                            QueryIcon="Find"
+                                            TextChanged="SearchBox_OnTextChanged"
+                                            SuggestionChosen="SearchBox_OnSuggestionChosen"
+                                            QuerySubmitted="SearchBox_OnQuerySubmitted">
+                                <AutoSuggestBox.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="S" Modifiers="Control" />
+                                </AutoSuggestBox.KeyboardAccelerators>
+                            </AutoSuggestBox>
+                            <TreeView x:Name="FormulationCategoryTree" Grid.Row="1" Padding="10" Margin="10"
+                                      MinWidth="280"
+                                      CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
+                                      SelectionMode="Single" SelectionChanged="TreeView_OnSelectionChanged"
+                                      SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}"
+                                      ItemTemplateSelector="{StaticResource CategoryItemTemplateSelector}">
+                                <TreeView.Resources>
+                                    <!-- ReSharper disable Xaml.RedundantResource -->
+                                    <Thickness x:Key="TreeViewItemPresenterMargin">8,3,16,3</Thickness>
+                                    <!-- ReSharper restore Xaml.RedundantResource -->
+                                </TreeView.Resources>
+                            </TreeView>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </SplitView.Pane>
+            <SplitView.Content>
+                <Grid>
+                    <ScrollViewer Canvas.ZIndex="1" x:Name="Viewer"
+                                  HorizontalAlignment="Stretch"
+                                  CornerRadius="4,4,0,0" BorderThickness="0"
+                                  Background="{ThemeResource ControlFillColorDefaultBrush}"
+                                  winUi:Effects.Shadow="{StaticResource ViewerShadow}"
+                                  Margin="20,8,20,0" Padding="16"
+                                  Visibility="{x:Bind ViewModel.IsFormulationSelected,Mode=OneWay,Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ScrollViewer.Transitions>
+                            <TransitionCollection>
+                                <NavigationThemeTransition />
+                            </TransitionCollection>
+                        </ScrollViewer.Transitions>
+                        <Grid Padding="0,0,0,30"
+                              MaxWidth="760" MinWidth="525">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" MaxWidth="380" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                        Margin="0,20,0,30"
+                                        HorizontalAlignment="Stretch">
+                                <control:EditableTextBlock
+                                    Text="{x:Bind ViewModel.SelectedFormulation.Name,Mode=TwoWay,FallbackValue='九转金丹'}"
+                                    FontSize="26" FontWeight="SemiBold"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Padding="8,6,8,10" Margin="0" />
+                                <control:EditableTextBlock IsMultiLine="False" InteractionMode="DoubleClick"
+                                                           VerticalAlignment="Bottom"
+                                                           Padding="8,6,10,12" Margin="2"
+                                                           Text="{x:Bind ViewModel.SelectedFormulation.Source,Mode=TwoWay,FallbackValue='《太上老君炼丹录》'}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{x:Bind ViewModel.SecondCategories}"
+                                      SelectedValuePath="Id" Margin="0,22,24,32"
+                                      SelectedValue="{x:Bind ViewModel.SelectedFormulation.CategoryId,Mode=TwoWay,FallbackValue=0}"
+                                      VerticalAlignment="Center" HorizontalAlignment="Right">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="common:FormulationCategory">
+                                        <TextBlock Text="{x:Bind Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Image Grid.Column="0" Grid.Row="1" Margin="4"
+                                   Source="{x:Bind ViewModel.SelectedFormulation.FormulationImage.Image,Mode=OneWay,Converter={StaticResource ByteArrayToImgConverter},FallbackValue={x:Null}}" />
+                            <control:EditableTextBlock Grid.Column="1" Grid.Row="1"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Song,Mode=TwoWay,FallbackValue='朕与将军解战袍，芙蓉帐暖度春宵。轻拢慢捻抹复挑，从此君王不早朝。'}"
+                                                       FontSize="16"
+                                                       IsMultiLine="True" InteractionMode="Button"
+                                                       Margin="8,0,12,0">
+                                <control:EditableTextBlock.Header>
+                                    <TextBlock Text="方歌"
+                                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                                               Margin="8,6,8,10" />
+                                </control:EditableTextBlock.Header>
+                            </control:EditableTextBlock>
+                            <ListView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                      ItemsSource="{x:Bind ViewModel.SelectedFormulation.Compositions,Mode=TwoWay,FallbackValue={x:Null}}"
+                                      Margin="4,16">
+                                <ListView.Header>
+                                    <Border Padding="20,6,0,6"
+                                            Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
+                                            CornerRadius="4">
+                                        <interactivity:Interaction.Behaviors>
+                                            <behaviors:StickyHeaderBehavior />
+                                        </interactivity:Interaction.Behaviors>
+                                        <controls:DataTable>
+                                            <controls:DataColumn Content="君臣佐使" CanResize="True"
+                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
+                                                                 MinWidth="12" DesiredWidth="Auto" />
+                                            <controls:DataColumn Content="组成" CanResize="True"
+                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
+                                                                 MinWidth="12" DesiredWidth="Auto" />
+                                            <controls:DataColumn Content="方中功效" CanResize="True"
+                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
+                                                                 MinWidth="12" DesiredWidth="*" />
+                                            <controls:DataColumn Content="备注" CanResize="True"
+                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
+                                                                 MinWidth="12" DesiredWidth="*" />
+                                        </controls:DataTable>
+                                    </Border>
+                                </ListView.Header>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="common:FormulationComposition">
+                                        <!--  We set HorizontalAlignment to Left here as we're not stretching our content with a star column  -->
+                                        <controls:DataRow HorizontalAlignment="Left" Margin="0">
+                                            <control:EditableTextBlock InteractionMode="DoubleClick"
+                                                                       Text="{x:Bind Position}"
+                                                                       Margin="4,0" />
+                                            <control:EditableTextBlock InteractionMode="DoubleClick"
+                                                                       Text="{x:Bind DrugName}"
+                                                                       Margin="4,0" />
+                                            <control:EditableTextBlock InteractionMode="DoubleClick"
+                                                                       Text="{x:Bind Effect}"
+                                                                       Margin="4,0" />
+                                            <control:EditableTextBlock InteractionMode="DoubleClick"
+                                                                       Text="{x:Bind Notes}"
+                                                                       Margin="4,0" />
+                                        </controls:DataRow>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource DefaultListViewItemStyle}"
+                                           TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                            <control:EditableTextBlock Header="用法"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Usage,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="功用"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Effect,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="主治"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Indication,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="病机"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Disease,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="运用"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Application,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="附方"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Supplement,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" />
+                            <control:EditableTextBlock Header="附注"
+                                                       Text="{x:Bind ViewModel.SelectedFormulation.Notes,Mode=TwoWay,FallbackValue=''}"
+                                                       IsMultiLine="True"
+                                                       Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" />
+                        </Grid>
+                    </ScrollViewer>
+                    <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.ZIndex="0"
+                               Visibility="{x:Bind ViewModel.IsFormulationSelected,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityFallbackConverter}}">
+                        请选择要维护的方剂
+                    </TextBlock>
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
     </Grid>
 </Page>

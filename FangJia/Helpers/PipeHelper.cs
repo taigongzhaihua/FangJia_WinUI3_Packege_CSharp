@@ -171,17 +171,17 @@ namespace FangJia.Helpers
                     {
                         process.Kill(); // 强制终止进程
                         process.WaitForExit(); // 等待进程退出
-                        Console.WriteLine($@"已终止残留进程: {process.Id}");
+                        Logger.Info($@"已终止残留进程: {process.Id}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($@"无法终止进程 {process.Id}: {ex.Message}");
+                        Logger.Error($@"无法终止进程 {process.Id}: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($@"清除残留进程时发生异常: {ex.Message}");
+                Logger.Error($@"清除残留进程时发生异常: {ex.Message}");
             }
         }
 
@@ -197,11 +197,12 @@ namespace FangJia.Helpers
                         return;
                     }
 
-                    SetForegroundWindow(WindowNative.GetWindowHandle(App.Window));
+
 
                     var appWindow = WindowHelper.GetAppWindow(App.Window);
 
                     appWindow.Show();
+                    SetForegroundWindow(WindowNative.GetWindowHandle(App.Window));
                     App.Window.Activate();
                 });
             }

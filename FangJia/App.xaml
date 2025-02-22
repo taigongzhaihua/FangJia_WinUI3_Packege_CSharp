@@ -9,23 +9,18 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- 其他合并的字典在这里 -->
+                <ResourceDictionary Source="Style/ColorResouses.xaml"></ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
-            <!-- 其他应用资源在这里 -->
+
             <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="HighContrast">
+                    <StaticResource x:Key="ControlBackgroundBrush" ResourceKey="SystemControlBackgroundBaseLowBrush"/>
+                </ResourceDictionary>
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="HomePageBackgroundBrush" Color="Transparent" />
-                    <StaticResource x:Key="GalleryBackgroundBrush" ResourceKey="SolidBackgroundFillColorBaseBrush" />
-                    <StaticResource x:Key="GalleryBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
+                    <StaticResource x:Key="ControlBackgroundBrush" ResourceKey="AcrylicWhiteBrush"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="HomePageBackgroundBrush" Color="Transparent" />
-                    <StaticResource x:Key="GalleryBackgroundBrush" ResourceKey="SolidBackgroundFillColorBaseBrush" />
-                    <StaticResource x:Key="GalleryBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
-                </ResourceDictionary>
-                <ResourceDictionary x:Key="HighContrast">
-                    <SolidColorBrush x:Key="HomePageBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
-                    <SolidColorBrush x:Key="GalleryBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
-                    <SolidColorBrush x:Key="GalleryBorderBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <StaticResource x:Key="ControlBackgroundBrush" ResourceKey="AcrylicBlackBrush"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

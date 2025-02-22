@@ -8,18 +8,22 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FangJia.ViewModel;
 public partial class FormulationViewModel(FormulationManager formulationManager) : ObservableObject
 {
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
+    [ObservableProperty] public partial ObservableCollection<FormulationCategory> Categories { get; set; } = [];
+    [ObservableProperty] public partial FormulationCategory? SelectedCategory { get; set; }
+    [ObservableProperty] public partial Formulation? SelectedFormulation { get; set; }
+    [ObservableProperty] public partial bool IsCategoryLoading { get; set; } = false;
+    [ObservableProperty] public partial List<string> SearchWords { get; set; } = [];
+    [ObservableProperty] public partial Dictionary<string, FormulationCategory> SearchDictionary { get; set; } = [];
+    [ObservableProperty] public partial ObservableCollection<FormulationCategory> SecondCategories { get; set; } = [];
+    [ObservableProperty] public partial bool IsFormulationSelected { get; set; } = false;
 
-    [ObservableProperty] private ObservableCollection<FormulationCategory> _categories = [];
-    [ObservableProperty] private FormulationCategory? _selectedCategory;
-    [ObservableProperty] private Formulation? _selectedFormulation;
-    [ObservableProperty] private bool? _isCategoryLoading = false;
-    [ObservableProperty] private List<string> _searchWords = [];
-    [ObservableProperty] private Dictionary<string, FormulationCategory> _searchDictionary = [];
+
 
     [SuppressMessage("ReSharper", "AsyncVoidMethod")]
     public async void LoadCategoriesAsync(DispatcherQueue dispatcherQueue)
@@ -31,12 +35,14 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
             {
                 Categories.Clear();
                 SearchWords.Clear();
+                IsCategoryLoading = true;
             });
 
             await foreach (var category in formulationManager.GetFirstCategoriesAsync())
             {
                 await foreach (var secondCategory in formulationManager.GetSecondCategoriesAsync(category.Name))
                 {
+                    await dispatcherQueue.EnqueueAsync(() => SecondCategories.Add(secondCategory));
                     secondCategory.Parent = category; // 设置父节点
                     await foreach (var formulation in formulationManager.GetFormulationsAsync(secondCategory.Id))
                     {
@@ -60,6 +66,49 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
         {
 
             _loadSemaphore.Release();
+            await dispatcherQueue.EnqueueAsync(() => IsCategoryLoading = false);
+        }
+    }
+
+    partial void OnSelectedCategoryChanged(FormulationCategory? value)
+    {
+        if (value != null)
+        {
+            if (value.IsCategory)
+            {
+                return;
+            }
+            SelectedFormulation = formulationManager.GetFormulationByIdAsync(value.Id).Result;
+            IsFormulationSelected = true;
+            Task.Run(async () =>
+            {
+                var fcs = new List<FormulationComposition>();
+                await foreach (var fc in formulationManager.GetFormulationCompositionsAsync(value.Id))
+                {
+                    fcs.Add(fc);
+                }
+
+                App.MainDispatcherQueue?.TryEnqueue(() =>
+                {
+                    SelectedFormulation?.Compositions?.Clear();
+                    foreach (var fc in fcs)
+                    {
+                        SelectedFormulation?.Compositions?.Add(fc);
+                    }
+                });
+
+                var formulationImage = await formulationManager.GetFormulationImageAsync(value.Id);
+                App.MainDispatcherQueue?.TryEnqueue(() =>
+                {
+                    if (formulationImage != null) SelectedFormulation!.FormulationImage = formulationImage;
+                });
+            });
+
+        }
+        else
+        {
+            SelectedFormulation = null;
+            IsFormulationSelected = false;
         }
     }
 }

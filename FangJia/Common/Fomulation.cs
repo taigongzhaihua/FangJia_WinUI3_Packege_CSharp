@@ -1,9 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
+using WinRT;
 
 namespace FangJia.Common;
-
+[GeneratedBindableCustomProperty]
 public partial class FormulationCategory(int id, string name, bool isCategory) : ObservableObject
 {
     public int Id { get; set; } = id;
@@ -12,11 +13,11 @@ public partial class FormulationCategory(int id, string name, bool isCategory) :
 
     public ObservableCollection<FormulationCategory> Children { get; set; } = [];
     public FormulationCategory? Parent { get; set; }
-    [ObservableProperty] private bool _isExpanded = false;
-    [ObservableProperty] private bool _isSelected = false;
+    [ObservableProperty] public partial bool IsExpanded { get; set; } = false;
+    [ObservableProperty] public partial bool IsSelected { get; set; } = false;
 }
 
-public class Formulation
+public partial class Formulation : ObservableObject
 {
     public int Id { get; set; } // 方剂ID
     public string? Name { get; set; } // 方剂名称
@@ -31,7 +32,7 @@ public class Formulation
     public string? Song { get; set; }       // 歌诀
     public string? Notes { get; set; }       // 备注
     public string? Source { get; set; }       // 来源
-    public FormulationImage FormulationImage { get; set; } = new();
+    [ObservableProperty] public partial FormulationImage FormulationImage { get; set; } = new();
 }
 
 [Serializable] // 可序列化标记
@@ -49,6 +50,7 @@ public class FormulationComposition
         return $"{DrugName}";
     }
 }
+
 
 public class FormulationImage
 {

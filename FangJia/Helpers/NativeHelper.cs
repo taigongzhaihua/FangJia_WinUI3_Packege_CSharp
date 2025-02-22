@@ -12,17 +12,15 @@ using System.Runtime.InteropServices;
 
 namespace FangJia.Helpers
 {
-    internal class NativeHelper
+    internal partial class NativeHelper
     {
         public const int ErrorSuccess = 0;
         public const int ErrorInsufficientBuffer = 122;
         public const int AppmodelErrorNoPackage = 15700;
 
-        [DllImport("api-ms-win-appmodel-runtime-l1-1-1", SetLastError = true)]
+        [LibraryImport("api-ms-win-appmodel-runtime-l1-1-1", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.U4)]
-#pragma warning disable SYSLIB1054
-        internal static extern uint GetCurrentPackageId(ref int pBufferLength, out byte pBuffer);
-#pragma warning restore SYSLIB1054
+        internal static partial uint GetCurrentPackageId(ref int pBufferLength, out byte pBuffer);
 
         public static bool IsAppPackaged
         {

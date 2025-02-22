@@ -1,20 +1,19 @@
 ﻿using Microsoft.UI.Xaml.Data;
 using System;
 
-namespace FangJia.Converters
-{
-    public partial class BoolToTextConverter : IValueConverter
-    {
-        public string? TrueText { get; set; }
-        public string? FalseText { get; set; }
-        public object? Convert(object? value, Type targetType, object parameter, string language)
-        {
-            return value is true ? TrueText : FalseText;
-        }
+namespace FangJia.Converters;
 
-        public object ConvertBack(object? value, Type targetType, object parameter, string language)
-        {
-            throw new NotImplementedException();
-        }
+public partial class BoolToTextConverter : IValueConverter
+{
+    public string? TrueText { get; set; }
+    public string? FalseText { get; set; }
+    public object? Convert(object? value, Type targetType, object parameter, string language)
+    {
+        return value is true ? TrueText : FalseText;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
     }
 }

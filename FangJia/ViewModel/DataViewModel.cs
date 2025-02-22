@@ -8,12 +8,18 @@ namespace FangJia.ViewModel
     public partial class DataViewModel : ObservableObject
     {
         [ObservableProperty]
-        private ObservableCollection<Category> _data =
-        [
-            (NavigationHelper.Categorizes["Formulation"] as Category)!,
-            (NavigationHelper.Categorizes["Drug"] as Category)!,
-            (NavigationHelper.Categorizes["Classic"] as Category)!,
-            (NavigationHelper.Categorizes["Case"] as Category)!
-        ];
+        public partial ObservableCollection<Category> Data { get; set; } =
+        [];
+
+        public DataViewModel()
+        {
+            Data =
+            [
+                (NavigationHelper.Categorizes["Formulation"] as Category)!,
+                (NavigationHelper.Categorizes["Drug"] as Category)!,
+                (NavigationHelper.Categorizes["Classic"] as Category)!,
+                (NavigationHelper.Categorizes["Case"] as Category)!
+            ];
+        }
     }
 }
