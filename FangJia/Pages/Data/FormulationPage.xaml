@@ -15,22 +15,22 @@
     xmlns:animatedVisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     xmlns:winUi="using:CommunityToolkit.WinUI"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
-    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
+    xmlns:vm="using:FangJia.ViewModel"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
     <Page.Resources>
-        <common:FormulationCategoryItemTemplateSelector x:Key="CategoryItemTemplateSelector">
+        <common:ItemTemplateSelector x:Key="CategoryItemTemplateSelector">
             <DataTemplate x:DataType="common:FormulationCategory">
                 <TreeViewItem Content="{x:Bind Name, Mode=TwoWay}"
                               ItemsSource="{x:Bind Children,Mode=TwoWay}"
                               IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                               IsSelected="{x:Bind IsSelected, Mode=TwoWay}" />
             </DataTemplate>
-        </common:FormulationCategoryItemTemplateSelector>
+        </common:ItemTemplateSelector>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter"></converters:BooleanToVisibilityFallbackConverter>
         <converters:ByteArrayToImgConverter x:Key="ByteArrayToImgConverter" />
-        <media:AttachedCardShadow x:Key="ViewerShadow" BlurRadius="8" Opacity="0.2" Offset="2" />
+        <media:AttachedCardShadow x:Key="ViewerShadow" BlurRadius="4" Opacity="0.2" Offset="0" />
     </Page.Resources>
     <Grid>
         <VisualStateManager.VisualStateGroups>
@@ -151,7 +151,7 @@
                 <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
             </Button.Resources>
 
-            <AnimatedIcon x:Name="SearchAnimatedIcon">
+            <AnimatedIcon>
                 <AnimatedIcon.Source>
                     <animatedVisuals:AnimatedGlobalNavigationButtonVisualSource />
                 </AnimatedIcon.Source>
@@ -164,14 +164,15 @@
                    PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
 
             <SplitView.Pane>
-                <Grid x:Name="BorderParent">
+                <Grid>
                     <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
                             Margin="8,8,0,0"
-                            BorderThickness="0" Canvas.ZIndex="1" >
+                            BorderThickness="0" Canvas.ZIndex="1">
                         <Grid x:Name="PaneGrid">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <AutoSuggestBox x:Name="SearchBox" Grid.Row="0" MinWidth="200" Margin="10,0,10,10"
                                             VerticalAlignment="Center" x:FieldModifier="public"
@@ -196,6 +197,14 @@
                                     <!-- ReSharper restore Xaml.RedundantResource -->
                                 </TreeView.Resources>
                             </TreeView>
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right"
+                                        Margin="10,0,10,10">
+                                <Button Content="新增" Click="CategoryInsertButton_OnClick"
+                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"
+                                        />
+                                <Button Content="删除" Click="CategoryDeleteButton_OnClick"
+                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </Grid>
@@ -231,6 +240,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition />
                             </Grid.RowDefinitions>
                             <StackPanel Orientation="Horizontal"
                                         Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
@@ -240,17 +250,22 @@
                                     Text="{x:Bind ViewModel.SelectedFormulation.Name,Mode=TwoWay,FallbackValue='九转金丹'}"
                                     FontSize="26" FontWeight="SemiBold"
                                     HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    Padding="8,6,8,10" Margin="0" />
-                                <control:EditableTextBlock IsMultiLine="False" InteractionMode="DoubleClick"
+                                    Padding="8,6,8,10" Margin="0"
+                                    SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                    SaveCommandParameter="Name" />
+                                <control:EditableTextBlock IsMultiLine="False" InteractionMode="Button"
                                                            VerticalAlignment="Bottom"
                                                            Padding="8,6,10,12" Margin="2"
                                                            Text="{x:Bind ViewModel.SelectedFormulation.Source,Mode=TwoWay,FallbackValue='《太上老君炼丹录》'}"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                           SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                           SaveCommandParameter="Source" />
                             </StackPanel>
                             <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{x:Bind ViewModel.SecondCategories}"
                                       SelectedValuePath="Id" Margin="0,22,24,32"
                                       SelectedValue="{x:Bind ViewModel.SelectedFormulation.CategoryId,Mode=TwoWay,FallbackValue=0}"
-                                      VerticalAlignment="Center" HorizontalAlignment="Right">
+                                      VerticalAlignment="Center" HorizontalAlignment="Right"
+                                      SelectionChanged="OnCategorySelectionChanged">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="common:FormulationCategory">
                                         <TextBlock Text="{x:Bind Name}" />
@@ -263,7 +278,9 @@
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Song,Mode=TwoWay,FallbackValue='朕与将军解战袍，芙蓉帐暖度春宵。轻拢慢捻抹复挑，从此君王不早朝。'}"
                                                        FontSize="16"
                                                        IsMultiLine="True" InteractionMode="Button"
-                                                       Margin="8,0,12,0">
+                                                       Margin="8,0,12,0"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Song">
                                 <control:EditableTextBlock.Header>
                                     <TextBlock Text="方歌"
                                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -272,7 +289,9 @@
                             </control:EditableTextBlock>
                             <ListView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                       ItemsSource="{x:Bind ViewModel.SelectedFormulation.Compositions,Mode=TwoWay,FallbackValue={x:Null}}"
-                                      Margin="4,16">
+                                      Margin="0,12" Padding="4" CornerRadius="4"
+                                      SelectedItem="{x:Bind ViewModel.SelectedComposition,Mode=TwoWay,FallbackValue={x:Null}}"
+                                      Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
                                 <ListView.Header>
                                     <Border Padding="20,6,0,6"
                                             Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
@@ -301,17 +320,25 @@
                                         <!--  We set HorizontalAlignment to Left here as we're not stretching our content with a star column  -->
                                         <controls:DataRow HorizontalAlignment="Left" Margin="0">
                                             <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Position}"
-                                                                       Margin="4,0" />
+                                                                       Text="{x:Bind Position,Mode=TwoWay}"
+                                                                       Margin="4,0"
+                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
+                                                                       SaveCommandParameter="Position" />
                                             <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind DrugName}"
-                                                                       Margin="4,0" />
+                                                                       Text="{x:Bind DrugName,Mode=TwoWay}"
+                                                                       Margin="4,0"
+                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
+                                                                       SaveCommandParameter="DrugName" />
                                             <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Effect}"
-                                                                       Margin="4,0" />
+                                                                       Text="{x:Bind Effect,Mode=TwoWay}"
+                                                                       Margin="4,0"
+                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
+                                                                       SaveCommandParameter="Effect" />
                                             <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Notes}"
-                                                                       Margin="4,0" />
+                                                                       Text="{x:Bind Notes,Mode=TwoWay}"
+                                                                       Margin="4,0"
+                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
+                                                                       SaveCommandParameter="Notes" />
                                         </controls:DataRow>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
@@ -322,34 +349,57 @@
                                     </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                        Orientation="Horizontal" HorizontalAlignment="Right"
+                                        Spacing="8">
+                                <Button Content="新增"
+                                        Command="{x:Bind ViewModel.InsertNewFormulationCompositionsCommand}"
+                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"/>
+                                <Button Content="删除"
+                                        Command="{x:Bind ViewModel.DeleteFormulationCompositionsCommand}" Padding="4"/>
+                            </StackPanel>
                             <control:EditableTextBlock Header="用法"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Usage,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Usage" />
                             <control:EditableTextBlock Header="功用"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Effect,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Effect" />
                             <control:EditableTextBlock Header="主治"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Indication,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Indication" />
                             <control:EditableTextBlock Header="病机"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Disease,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Disease" />
                             <control:EditableTextBlock Header="运用"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Application,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Application" />
                             <control:EditableTextBlock Header="附方"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Supplement,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Supplement" />
                             <control:EditableTextBlock Header="附注"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Notes,Mode=TwoWay,FallbackValue=''}"
                                                        IsMultiLine="True"
-                                                       Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" />
+                                                       Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
+                                                       SaveCommandParameter="Notes" />
                         </Grid>
                     </ScrollViewer>
                     <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}"

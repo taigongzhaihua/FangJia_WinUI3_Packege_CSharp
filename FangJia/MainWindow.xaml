@@ -101,7 +101,8 @@
             <Button Grid.Column="6"
                     Click="FullScreen"
                     x:Name="FullScreenButton"
-                    ToolTipService.ToolTip="全屏">
+                    ToolTipService.ToolTip="全屏"
+                    Padding="8">
                 <FontIcon Glyph="&#xE740;" FontSize="10" />
             </Button>
         </Grid>

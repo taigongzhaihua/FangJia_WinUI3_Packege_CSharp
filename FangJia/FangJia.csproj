@@ -214,6 +214,7 @@
 		<UserSecretsId>acd2a293-3a32-4544-a133-6d5a59f0b4e3</UserSecretsId>
 		<NuGetAudit>True</NuGetAudit>
 		<NuGetAuditLevel>moderate</NuGetAuditLevel>
+		<EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
 		<IsAotCompatible>False</IsAotCompatible>

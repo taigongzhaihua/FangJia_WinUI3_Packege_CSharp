@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Markup;
 
 namespace FangJia.Common;
 [ContentProperty(Name = "ItemTemplate")]
-public partial class FormulationCategoryItemTemplateSelector : DataTemplateSelector
+public partial class ItemTemplateSelector : DataTemplateSelector
 {
     public DataTemplate? ItemTemplate { get; set; }
     protected override DataTemplate? SelectTemplateCore(object item)

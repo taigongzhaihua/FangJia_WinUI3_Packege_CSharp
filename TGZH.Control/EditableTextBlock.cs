@@ -59,6 +59,16 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
         set => SetValue(SaveCommandProperty, value);
     }
 
+    // 定义 CommandParameter 依赖属性
+    public static readonly DependencyProperty SaveCommandParameterProperty =
+        DependencyProperty.Register(nameof(SaveCommandParameter), typeof(object), typeof(EditableTextBlock), new PropertyMetadata(null));
+
+    public object SaveCommandParameter
+    {
+        get => GetValue(SaveCommandParameterProperty);
+        set => SetValue(SaveCommandParameterProperty, value);
+    }
+
     // 取消命令
     public static readonly DependencyProperty CancelCommandProperty =
         DependencyProperty.Register(nameof(CancelCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
@@ -591,8 +601,8 @@ public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
         UpdateVisualStates(true);
 
         EditingCompleted?.Invoke(this, new RoutedEventArgs());
-        if (SaveCommand != null && SaveCommand.CanExecute(null))
-            SaveCommand.Execute(null);
+        if (SaveCommand != null && SaveCommand.CanExecute(SaveCommandParameter))
+            SaveCommand.Execute(SaveCommandParameter);
     }
 
     private void CancelEdit()
