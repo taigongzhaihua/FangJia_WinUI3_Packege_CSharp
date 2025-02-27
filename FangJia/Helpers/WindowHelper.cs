@@ -1,12 +1,12 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
+﻿//------------------------------------------------------------------------
+// 本应用部分代码参考了以下开源项目：
+// 1.WinUi3 Gallery
+// 2.WinUI Community Toolkit
+// 3.部分代码由 ChatGPT 、DeepSeek、Copilot 生成
+// 版权归原作者所有
+// FangJia 仅做学习交流使用
+// 转载请注明出处
+//------------------------------------------------------------------------
 
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -21,13 +21,17 @@ using WinRT.Interop;
 
 namespace FangJia.Helpers
 {
-    // NavigationHelper class to allow the app to find the Window that contains an
-    // arbitrary UIElement (GetWindowForElement).  To do this, we keep track
-    // of all active Windows.  The app code must call WindowHelper.CreateWindow
-    // rather than "new Window" so we can keep track of all the relevant
-    // windows.  In the future, we would like to support this in platform APIs.
+    // NavigationHelper 类用于帮助应用程序查找包含特定 UIElement 的窗口（使用 GetWindowForElement 方法）。
+    // 为实现这一目的，我们会追踪所有活动窗口。
+    // 因此，应用程序代码必须调用 WindowHelper.CreateWindow 而不是直接实例化 "new Window" ，以便我们能追踪到所有相关窗口。
+    // 未来，我们希望在平台 API 中对这一功能提供原生支持。
+
     public class WindowHelper
     {
+        /// <summary>
+        /// 创建一个新的窗口。
+        /// </summary>
+        /// <returns></returns>
         public static Window? CreateWindow()
         {
             var newWindow = new Window
@@ -38,6 +42,10 @@ namespace FangJia.Helpers
             return newWindow;
         }
 
+        /// <summary>
+        /// 追踪窗口。
+        /// </summary>
+        /// <param name="window"></param>
         public static void TrackWindow(Window? window)
         {
             if (window == null) return;
@@ -45,6 +53,11 @@ namespace FangJia.Helpers
             ActiveWindows.Add(window);
         }
 
+        /// <summary>
+        /// 获取指定窗口的 AppWindow 对象。
+        /// </summary>
+        /// <param name="window"></param>
+        /// <returns></returns>
         public static AppWindow GetAppWindow(Window window)
         {
             var hWnd = WindowNative.GetWindowHandle(window);
@@ -52,22 +65,39 @@ namespace FangJia.Helpers
             return AppWindow.GetFromWindowId(wndId);
         }
 
+        /// <summary>
+        /// 获取包含指定 UIElement 的窗口。
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
         public static Window? GetWindowForElement(UIElement element)
         {
             return element.XamlRoot != null ? ActiveWindows.FirstOrDefault(window => element.XamlRoot == window?.Content.XamlRoot) : null;
         }
-        // get dpi for an element
+
+
+        /// <summary>
+        /// 获取指定 UIElement 的栅格化比例。
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
         public static double GetRasterizationScaleForElement(UIElement element)
         {
             if (element.XamlRoot == null) return 0.0;
             return ActiveWindows.Any(window => element.XamlRoot == window?.Content.XamlRoot) ? element.XamlRoot.RasterizationScale : 0.0;
         }
 
+        /// <summary>
+        /// 获取或设置活动窗口列表。
+        /// </summary>
         public static List<Window?> ActiveWindows { get; } = [];
 
+        /// <summary>
+        /// 获取或设置应用程序的本地文件夹。
+        /// </summary>
         public static StorageFolder GetAppLocalFolder()
         {
-            var localFolder = !NativeHelper.IsAppPackaged ? Task.Run(async () => await StorageFolder.GetFolderFromPathAsync(System.AppContext.BaseDirectory)).Result : ApplicationData.Current.LocalFolder;
+            var localFolder = !NativeHelper.IsAppPackaged ? Task.Run(async () => await StorageFolder.GetFolderFromPathAsync(AppContext.BaseDirectory)).Result : ApplicationData.Current.LocalFolder;
             return localFolder;
         }
     }
