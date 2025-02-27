@@ -47,13 +47,13 @@
                                             RasterizePixelWidth="120" RasterizePixelHeight="120"/>
                         </Image.Source>
                     </Image>
-                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{x:Bind AppName}"
+                    <TextBlock Grid.Column="1" Grid.Row="0" Text="{x:Bind pages:AboutPage.AppName}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                HorizontalAlignment="Left"
                                VerticalAlignment="Top"
                                Margin="0,24,24,12" />
                     <TextBlock Grid.Row="1" Grid.Column="1"
-                               Text="{x:Bind AppDescription}"
+                               Text="{x:Bind pages:AboutPage.AppDescription}"
                                Style="{ThemeResource BodyTextBlockStyle}"
                                HorizontalAlignment="Left"
                                VerticalAlignment="Top"
@@ -65,7 +65,7 @@
                         <TextBlock Text="版权所有 © 2025  "
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorDisabledBrush}" />
-                        <TextBlock Text="{x:Bind AppPublisher}"
+                        <TextBlock Text="{x:Bind pages:AboutPage.AppPublisher}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                    Margin="10,0" />
@@ -81,7 +81,7 @@
 
                 </Grid>
                 <toolkit:SettingsCard Header="GitHub"
-                                      Description="{x:Bind GitHubUri}"
+                                      Description="{x:Bind pages:AboutPage.GitHubUri}"
                                       CornerRadius="0"
                                       BorderThickness="0.8,0.8,0.8,0"
                                       Click="ButtonBase_OnClick"
@@ -96,7 +96,7 @@
                     </toolkit:SettingsCard.ActionIcon>
                 </toolkit:SettingsCard>
                 <toolkit:SettingsCard Header="邮箱"
-                                      Description="{x:Bind EMail}"
+                                      Description="{x:Bind pages:AboutPage.EMail}"
                                       HeaderIcon="Mail"
                                       CornerRadius="0"
                                       BorderThickness="0.8,0.8,0.8,0" 
@@ -116,7 +116,7 @@
                     </toolkit:SettingsExpander.Content>
                     <toolkit:SettingsExpander.Items>
                         <toolkit:SettingsCard IsActionIconVisible="False"
-                                              Content="{x:Bind AppVersion}"
+                                              Content="{x:Bind pages:AboutPage.AppVersion}"
                                               IsClickEnabled="False"
                                               Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}">
                             <toolkit:SettingsCard.Header>
@@ -161,7 +161,7 @@
                         <FontIcon Glyph="&#xE770;" />
                     </toolkit:SettingsExpander.HeaderIcon>
                     <toolkit:SettingsExpander.Items>
-                        <toolkit:SettingsCard Content="{x:Bind OsVersion}"
+                        <toolkit:SettingsCard Content="{x:Bind pages:AboutPage.OsVersion}"
                                               IsClickEnabled="False"
                                               Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}">
                             <toolkit:SettingsCard.Header>
@@ -169,7 +169,7 @@
                                            Text="系统版本" />
                             </toolkit:SettingsCard.Header>
                         </toolkit:SettingsCard>
-                        <toolkit:SettingsCard Content="{x:Bind AppArchitecture}"
+                        <toolkit:SettingsCard Content="{x:Bind pages:AboutPage.AppArchitecture}"
                                               IsClickEnabled="False"
                                               Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}">
                             <toolkit:SettingsCard.Header>

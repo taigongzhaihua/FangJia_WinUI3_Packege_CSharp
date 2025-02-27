@@ -22,7 +22,7 @@ public sealed partial class AboutPage
         InitializeComponent();
     }
 
-    private string AppVersion
+    private static string AppVersion
     {
         get
         {
@@ -31,15 +31,15 @@ public sealed partial class AboutPage
         }
     }
 
-    private string AppName => Package.Current.DisplayName;
+    private static string AppName => Package.Current.DisplayName;
 
-    private string AppPublisher => Package.Current.PublisherDisplayName;
+    private static string AppPublisher => Package.Current.PublisherDisplayName;
 
-    private string AppDescription => Properties.Resource.AppDescription;
+    private static string AppDescription => Properties.Resource.AppDescription;
 
-    private string AppArchitecture => Package.Current.Id.Architecture.ToString();
+    private static string AppArchitecture => Package.Current.Id.Architecture.ToString();
 
-    private string OsVersion
+    private static string OsVersion
     {
         get
         {
@@ -53,7 +53,7 @@ public sealed partial class AboutPage
         }
     }
 
-    private string GitHubUri => Properties.Resource.GithubUri;
+    private static string GitHubUri => Properties.Resource.GitHubUri;
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
     {
         OpenUrl(GitHubUri);
@@ -77,7 +77,7 @@ public sealed partial class AboutPage
         }
     }
 
-    private string EMail => Properties.Resource.EMail;
+    private static string EMail => Properties.Resource.EMail;
 
 
     private void CopyEMail(object sender, RoutedEventArgs e)
