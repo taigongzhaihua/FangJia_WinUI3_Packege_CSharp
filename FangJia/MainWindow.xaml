@@ -102,8 +102,10 @@
                     Click="FullScreen"
                     x:Name="FullScreenButton"
                     ToolTipService.ToolTip="全屏"
-                    Padding="8">
-                <FontIcon Glyph="&#xE740;" FontSize="10" />
+                    Padding="8" Margin="0,0,8,0"
+                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                    Background="{ThemeResource ControlFillColorTransparentBrush}">
+                <FontIcon Glyph="&#xE740;" FontSize="13" />
             </Button>
         </Grid>
 
