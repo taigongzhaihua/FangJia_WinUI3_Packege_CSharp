@@ -81,9 +81,9 @@ namespace FangJia.Properties {
         /// <summary>
         ///   查找类似 https://github.com/taigongzhaihua/FangJia_WinUI3_CSharp 的本地化字符串。
         /// </summary>
-        internal static string GithubUri {
+        internal static string GitHubUri {
             get {
-                return ResourceManager.GetString("GithubUri", resourceCulture);
+                return ResourceManager.GetString("GitHubUri", resourceCulture);
             }
         }
     }
