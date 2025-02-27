@@ -15,7 +15,6 @@
     xmlns:animatedVisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     xmlns:winUi="using:CommunityToolkit.WinUI"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
-    xmlns:vm="using:FangJia.ViewModel"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
     <Page.Resources>
@@ -28,7 +27,7 @@
             </DataTemplate>
         </common:ItemTemplateSelector>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter"></converters:BooleanToVisibilityFallbackConverter>
+        <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter" />
         <converters:ByteArrayToImgConverter x:Key="ByteArrayToImgConverter" />
         <media:AttachedCardShadow x:Key="ViewerShadow" BlurRadius="4" Opacity="0.2" Offset="0" />
     </Page.Resources>
@@ -162,20 +161,45 @@
         </Button>
         <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Right"
                    PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
-
             <SplitView.Pane>
                 <Grid>
                     <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
                             Margin="8,8,0,0"
                             BorderThickness="0" Canvas.ZIndex="1">
                         <Grid x:Name="PaneGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <AutoSuggestBox x:Name="SearchBox" Grid.Row="0" MinWidth="200" Margin="10,0,10,10"
-                                            VerticalAlignment="Center" x:FieldModifier="public"
+                            <Grid.Resources>
+                                <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
+                                <ResourceDictionary>
+                                    <ResourceDictionary.ThemeDictionaries>
+                                        <ResourceDictionary x:Key="Default">
+                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="HighContrast">
+                                            <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Light">
+                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Dark">
+                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                    </ResourceDictionary.ThemeDictionaries>
+                                </ResourceDictionary>
+                                <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
+                            </Grid.Resources>
+                            <AutoSuggestBox x:Name="SearchBox"
+                                            Grid.Row="0" Grid.Column="0"
+                                            VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                            x:FieldModifier="public"
                                             KeyboardAcceleratorPlacementMode="Hidden" PlaceholderText="搜索"
                                             QueryIcon="Find"
                                             TextChanged="SearchBox_OnTextChanged"
@@ -185,10 +209,30 @@
                                     <KeyboardAccelerator Key="S" Modifiers="Control" />
                                 </AutoSuggestBox.KeyboardAccelerators>
                             </AutoSuggestBox>
-                            <TreeView x:Name="FormulationCategoryTree" Grid.Row="1" Padding="10" Margin="10"
+                            <Button Grid.Row="0" Grid.Column="1"
+                                    Click="CategoryInsertButton_OnClick"
+                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                    Padding="4" Margin="4,4,2,4"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="新增" HorizontalAlignment="Right">
+                                <FontIcon Glyph="&#xE710;" FontSize="16"/>
+                            </Button>
+                            <Button Grid.Row="0" Grid.Column="2"
+                                    Click="CategoryDeleteButton_OnClick"
+                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                    Padding="4" Margin="2,4,8,4"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="删除" HorizontalAlignment="Right">
+                                    <FontIcon Glyph="&#xE738;" FontSize="16" />
+                            </Button>
+                            <TreeView x:Name="FormulationCategoryTree"
+                                      Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                      Padding="10" Margin="10"
                                       MinWidth="280"
                                       CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
-                                      SelectionMode="Single" SelectionChanged="TreeView_OnSelectionChanged"
+                                      SelectionMode="Single" 
+                                      SelectionChanged="TreeView_OnSelectionChanged"
+                                      BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
                                       SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}"
                                       ItemTemplateSelector="{StaticResource CategoryItemTemplateSelector}">
                                 <TreeView.Resources>
@@ -197,14 +241,6 @@
                                     <!-- ReSharper restore Xaml.RedundantResource -->
                                 </TreeView.Resources>
                             </TreeView>
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right"
-                                        Margin="10,0,10,10">
-                                <Button Content="新增" Click="CategoryInsertButton_OnClick"
-                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"
-                                        />
-                                <Button Content="删除" Click="CategoryDeleteButton_OnClick"
-                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"/>
-                            </StackPanel>
                         </Grid>
                     </Border>
                 </Grid>
@@ -354,9 +390,9 @@
                                         Spacing="8">
                                 <Button Content="新增"
                                         Command="{x:Bind ViewModel.InsertNewFormulationCompositionsCommand}"
-                                        Style="{ThemeResource AccentButtonStyle}" Padding="4"/>
+                                        Style="{ThemeResource AccentButtonStyle}" Padding="4" />
                                 <Button Content="删除"
-                                        Command="{x:Bind ViewModel.DeleteFormulationCompositionsCommand}" Padding="4"/>
+                                        Command="{x:Bind ViewModel.DeleteFormulationCompositionsCommand}" Padding="4" />
                             </StackPanel>
                             <control:EditableTextBlock Header="用法"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Usage,Mode=TwoWay,FallbackValue=''}"

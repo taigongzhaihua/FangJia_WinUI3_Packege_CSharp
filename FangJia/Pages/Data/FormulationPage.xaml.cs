@@ -307,8 +307,7 @@ public sealed partial class FormulationPage
         {
             Title = "错误",
             Severity = InfoBarSeverity.Error,
-            IsOpen = false,  // 初始隐藏
-            Margin = new Thickness(0, 0, 0, 12)
+            IsOpen = false
         };
 
         mainPanel.Children.Add(infoBar);
@@ -335,7 +334,8 @@ public sealed partial class FormulationPage
 
         var txtNewMainCategory = new TextBox
         { PlaceholderText = "新一级分类", Width = 150, Visibility = Visibility.Collapsed };
-        var tbNewCategory = new ToggleButton { Content = "新大类" };
+        var tbNewCategory = new ToggleButton { Content = new FontIcon { Glyph = "\uECC8" }, Padding = new Thickness(5) };
+        ToolTipService.SetToolTip(tbNewCategory, "新一级分类");
         // ToggleButton 切换：选中时显示 TextBox，否则显示 ComboBox
         tbNewCategory.Checked += (_, _) =>
         {
@@ -347,23 +347,23 @@ public sealed partial class FormulationPage
             cbMainCategory.Visibility = Visibility.Visible;
             txtNewMainCategory.Visibility = Visibility.Collapsed;
         };
-
+        // 新增二级分类的 TextBox
+        var txtSubCategory = new TextBox { PlaceholderText = "新增二级分类", Width = 150 };
         categoryFirstRow.Children.Add(cbMainCategory);
         categoryFirstRow.Children.Add(txtNewMainCategory);
         categoryFirstRow.Children.Add(tbNewCategory);
+        categoryFirstRow.Children.Add(txtSubCategory);
         categoryPanel.Children.Add(categoryFirstRow);
 
-        // 新增二级分类的 TextBox
-        var txtSubCategory = new TextBox { PlaceholderText = "新增二级分类" };
-        categoryPanel.Children.Add(txtSubCategory);
 
         // 方剂模式面板（初始隐藏）
-        var formulationPanel = new StackPanel { Spacing = 8, Visibility = Visibility.Collapsed };
+        var formulationPanel = new StackPanel
+        { Spacing = 8, Visibility = Visibility.Collapsed, Orientation = Orientation.Horizontal };
 
         // 第一个 ComboBox：选择分类（假设 ItemsSource 同 CategoryList，且 SelectedValuePath 为 "Id"）
         var cbCategoryForFormulation = new ComboBox
         {
-            Width = 150,
+            Width = 120,
             PlaceholderText = "选择分类",
             ItemsSource = ViewModel.Categories,
             DisplayMemberPath = "Name"
@@ -372,17 +372,18 @@ public sealed partial class FormulationPage
         // 第二个 ComboBox：选择二级分类
         var cbSubCategoryForFormulation = new ComboBox
         {
-            Width = 150,
-            PlaceholderText = "选择二级分类",
+            Width = 120,
+            PlaceholderText = "二级分类",
             DisplayMemberPath = "Name"
         };
 
         cbCategoryForFormulation.SelectionChanged += (_, args) =>
         {
-            cbSubCategoryForFormulation.ItemsSource = (args.AddedItems.FirstOrDefault() as FormulationCategory)?.Children;
+            cbSubCategoryForFormulation.ItemsSource =
+                (args.AddedItems.FirstOrDefault() as FormulationCategory)?.Children;
         };
         // 新建方剂名称的 TextBox
-        var txtFormulationName = new TextBox { PlaceholderText = "新建方剂" };
+        var txtFormulationName = new TextBox { PlaceholderText = "新建方剂", Width = 120 };
 
         formulationPanel.Children.Add(cbCategoryForFormulation);
         formulationPanel.Children.Add(cbSubCategoryForFormulation);
@@ -496,6 +497,11 @@ public sealed partial class FormulationPage
                 }
 
                 await Task.CompletedTask;
+                if (commandParam is (int, string name))
+                {
+                    // 选中新增的方剂
+                    await SelectFormulation(name);
+                }
             }
             catch (Exception exception)
             {

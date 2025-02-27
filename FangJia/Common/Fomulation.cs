@@ -62,10 +62,10 @@ public partial class FormulationComposition : ObservableObject
         var k = key as string;
         _ = k switch
         {
-            "Position" => FormulationManager.UpdateFormulationComposition(Id, ("Position", Position)),
-            "DrugName" => FormulationManager.UpdateFormulationComposition(Id, ("DrugName", DrugName)),
-            "Effect" => FormulationManager.UpdateFormulationComposition(Id, ("Effect", Effect)),
-            "Notes" => FormulationManager.UpdateFormulationComposition(Id, ("Notes", Notes)),
+            "Position" => FormulationManager.UpdateFormulationComposition(Id, (k, Position)),
+            "DrugName" => FormulationManager.UpdateFormulationComposition(Id, (k, DrugName)),
+            "Effect" => FormulationManager.UpdateFormulationComposition(Id, (k, Effect)),
+            "Notes" => FormulationManager.UpdateFormulationComposition(Id, (k, Notes)),
             _ => null
         };
     }
