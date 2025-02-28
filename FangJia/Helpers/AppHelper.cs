@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace FangJia.Helpers;
 
-public static class EnumHelper
+public static class AppHelper
 {
     /// <summary>
     /// 从字符串转换为枚举。
@@ -30,5 +30,16 @@ public static class EnumHelper
         }
 
         return (TEnum)Enum.Parse(typeof(TEnum), text!);
+    }
+
+    /// <summary>
+    /// 获取当前路径下文件的绝对路径。
+    /// </summary>
+    /// <param name="fileName">文件名。</param>
+    /// <returns>文件的绝对路径。</returns>
+
+    public static string GetFilePath(string fileName)
+    {
+        return System.IO.Path.Combine(AppContext.BaseDirectory, fileName);
     }
 }

@@ -44,7 +44,7 @@ namespace FangJia.Helpers
                     }
                 }
 
-                return EnumHelper.GetEnum<ElementTheme>(Application.Current.RequestedTheme.ToString());
+                return AppHelper.GetEnum<ElementTheme>(Application.Current.RequestedTheme.ToString());
             }
         }
 
@@ -112,7 +112,7 @@ namespace FangJia.Helpers
 
             if (savedTheme != null)
             {
-                RootTheme = EnumHelper.GetEnum<ElementTheme>(savedTheme);
+                RootTheme = AppHelper.GetEnum<ElementTheme>(savedTheme);
             }
 
         }
