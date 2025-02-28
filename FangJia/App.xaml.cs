@@ -28,7 +28,7 @@ namespace FangJia;
 /// </summary>
 public partial class App
 {
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogHelper.GetLogger(typeof(App).FullName);
 
     /// <summary>
     /// 获取主线程的 DispatcherQueue。
