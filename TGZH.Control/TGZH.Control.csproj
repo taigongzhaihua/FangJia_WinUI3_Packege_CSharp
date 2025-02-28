@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.22000.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>TGZH.Control</RootNamespace>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	  <LangVersion>preview</LangVersion>
-	  <NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>preview</LangVersion>
+    <NoWarn>
 		  0108;   <!-- 'x' hides inherited member 'y'. Use the new keyword if hiding was intended. -->
 		  8305;    <!-- 'x' is for evaluation purposes only and is subject to change or removal in future updates. -->
 		  NU1701;
@@ -19,7 +19,7 @@
 		  WMC0001;
 
 	  </NoWarn>
-	  <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <IsAotCompatible>True</IsAotCompatible>
@@ -57,5 +57,4 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
-  
 </Project>
