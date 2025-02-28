@@ -31,13 +31,13 @@ public sealed partial class AboutPage
         }
     }
 
-    private static string AppName => Package.Current.DisplayName;
+    private static readonly string AppName = Package.Current.DisplayName;
 
-    private static string AppPublisher => Package.Current.PublisherDisplayName;
+    private static readonly string AppPublisher = Package.Current.PublisherDisplayName;
 
-    private static string AppDescription => Properties.Resource.AppDescription;
+    private static readonly string AppDescription = Properties.Resource.AppDescription;
 
-    private static string AppArchitecture => Package.Current.Id.Architecture.ToString();
+    private static readonly string AppArchitecture = Package.Current.Id.Architecture.ToString();
 
     private static string OsVersion
     {
@@ -53,7 +53,7 @@ public sealed partial class AboutPage
         }
     }
 
-    private static string GitHubUri => Properties.Resource.GitHubUri;
+    private static readonly string GitHubUri = Properties.Resource.GitHubUri;
     private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
     {
         OpenUrl(GitHubUri);

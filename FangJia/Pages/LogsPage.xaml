@@ -13,32 +13,33 @@
     Background="{ThemeResource ControlAltFillColorTransparentBrush}"
     NavigationCacheMode="Disabled">
     <Page.Resources>
-        <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter"/>
+        <converters:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
+        <converters:LogLevelToForegroundConverter x:Key="LogLevelToForegroundConverter" />
     </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="24,12">
             <TextBlock Text="级别：" Margin="10,0,0,0"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
             <ToggleButton x:Name="OptionsAllCheckBox" Content="全部" IsThreeState="True"
                           Checked="SelectAll_Checked" Unchecked="SelectAll_Unchecked"
                           Indeterminate="SelectAll_Indeterminate"
-                          Width="60" CornerRadius="4,0,0,4"/>
+                          Width="60" CornerRadius="4,0,0,4" />
             <ToggleButton x:Name="Option1CheckBox" Content="DEBUG" Margin="0" Checked="Option_Checked"
-                          Unchecked="Option_Unchecked" CornerRadius="0"/>
+                          Unchecked="Option_Unchecked" CornerRadius="0" />
             <ToggleButton x:Name="Option2CheckBox" Content="INFO" Margin="0" Checked="Option_Checked"
-                          Unchecked="Option_Unchecked" CornerRadius="0"/>
+                          Unchecked="Option_Unchecked" CornerRadius="0" />
             <ToggleButton x:Name="Option3CheckBox" Content="WARN" Margin="0" Checked="Option_Checked"
-                          Unchecked="Option_Unchecked" CornerRadius="0"/>
+                          Unchecked="Option_Unchecked" CornerRadius="0" />
             <ToggleButton x:Name="Option4CheckBox" Content="ERROR" Margin="0" Checked="Option_Checked"
-                          Unchecked="Option_Unchecked" CornerRadius="0,4,4,0"/>
+                          Unchecked="Option_Unchecked" CornerRadius="0,4,4,0" />
 
             <TextBlock Text="时间：" Margin="40,0,0,0"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
             <RadioButtons x:Name="LogTime"
                           MaxColumns="3"
                           SelectedIndex="0"
@@ -50,7 +51,7 @@
                 <x:String>7日内</x:String>
                 <x:String>全部</x:String>
             </RadioButtons>
-            
+
             <ProgressRing x:Name="LoadingRing"></ProgressRing>
         </StackPanel>
         <ScrollView Grid.Row="1"
@@ -59,28 +60,42 @@
             <!-- 日志显示区域 -->
             <ItemsRepeater ItemsSource="{x:Bind FilteredLogs,Mode=OneWay}">
                 <ItemsRepeater.Layout>
-                    <StackLayout Orientation="Vertical"/>
+                    <StackLayout Orientation="Vertical" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <!-- 指定 x:DataType 可以获得编译时类型检查（可选） -->
                     <DataTemplate x:DataType="helpers:LogItem">
                         <!-- 为每个项创建一个 TextBlock，
                  将整个数据对象绑定到 Tag 属性上 -->
-                        <TextBlock x:Name="ItemTextBlock" Tag="{x:Bind}" TextWrapping="NoWrap" TextTrimming="WordEllipsis">
-                            <TextBlock.Inlines>
-                                <!-- 每个 Run 通过 ElementName 引用当前 TextBlock 的 Tag 对象 -->
-                                <Run Text="["/>
-                                <Run Text="{Binding Tag.TimestampUtc, ElementName=ItemTextBlock,Converter={StaticResource DateTimeToStringConverter}}" Foreground="Gray"/>
-                                <Run Text="]    ["/>
-                                <Run Text="{Binding Tag.Level, ElementName=ItemTextBlock}" FontWeight="Bold"/>
-                                <Run Text="]&#x09;"/>
-                                <Run Text="{Binding Tag.Logger, ElementName=ItemTextBlock}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <Run Text="&#x09;"/>
-                                <Run Text="{Binding Tag.Message, ElementName=ItemTextBlock}" Foreground="Red"/>
-                                <Run Text="&#x09;"/>
-                                <Run Text="{Binding Tag.Exception, ElementName=ItemTextBlock}" Foreground="Red"/>
-                            </TextBlock.Inlines>
-                        </TextBlock>
+                        <Grid Margin="5,1.5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="550" />
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="ItemTextBlock" Tag="{x:Bind}" TextWrapping="NoWrap" TextTrimming="Clip"
+                                       Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Top">
+                                <TextBlock.Inlines>
+                                    <!-- 每个 Run 通过 ElementName 引用当前 TextBlock 的 Tag 对象 -->
+                                    <Run Text="[" Foreground="DeepPink"/>
+                                    <Run
+                                        Text="{Binding Tag.TimestampUtc, ElementName=ItemTextBlock,Converter={StaticResource DateTimeToStringConverter}}"
+                                        Foreground="SlateGray" />
+                                    <Run Text="]  ["  Foreground="DeepPink"/>
+                                    <Run Text="{Binding Tag.Level, ElementName=ItemTextBlock}" FontWeight="Bold" 
+                                         Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
+                                    <Run Text="]&#x09;"  Foreground="DeepPink"/>
+                                    <Run Text="{Binding Tag.Logger, ElementName=ItemTextBlock}" FontWeight="SemiBold" 
+                                         Foreground="Salmon" />
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <TextBlock TextWrapping="WrapWholeWords" Grid.Column="1" VerticalAlignment="Top">
+                                <Run Text="{Binding Tag.Message, ElementName=ItemTextBlock}"
+                                     Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
+                                <Run Text="&#x09;" />
+                                <Run Text="{Binding Tag.Exception, ElementName=ItemTextBlock}"
+                                     Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
+                            </TextBlock>
+                        </Grid>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>

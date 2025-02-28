@@ -28,7 +28,7 @@ public sealed partial class SettingsPage
         var selectedTheme = ((ComboBoxItem)ThemeMode.SelectedItem)?.Tag?.ToString();
         var window = WindowHelper.GetWindowForElement(this);
         if (selectedTheme == null) return;
-        ThemeHelper.RootTheme = EnumHelper.GetEnum<ElementTheme>(selectedTheme);
+        ThemeHelper.RootTheme = AppHelper.GetEnum<ElementTheme>(selectedTheme);
         string color;
         switch (selectedTheme)
         {

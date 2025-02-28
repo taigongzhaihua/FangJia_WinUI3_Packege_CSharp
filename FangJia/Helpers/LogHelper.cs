@@ -11,25 +11,32 @@
 
 using Microsoft.Data.Sqlite;
 using NLog;
+using NLog.Config;
+using NLog.Targets;
 using System;
 using System.Collections.Generic;
+#if DEBUG
+using System.Diagnostics;
+#endif
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Windows.Storage;
 using WinRT;
 
 
 namespace FangJia.Helpers;
-
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public static class LogHelper
 {
     private const string LogLevelKey = "LogLevel";
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    public static readonly string DatabasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log.db");
+    private static readonly Logger Logger = GetLogger(typeof(LogHelper).FullName);
+    public static readonly string DatabasePath = AppHelper.GetFilePath("Log.db");
+
 
     public static void Initialize()
     {
-        LogLevel = LogLevel.FromString(ApplicationData.Current.LocalSettings.Values[LogLevelKey] as string ?? "Debug");
         CreateDatabaseIfNotExists();
+        ConfigureLogging(LogLevel);
     }
 
     public static void CreateDatabaseIfNotExists()
@@ -78,7 +85,110 @@ public static class LogHelper
 
         command.ExecuteNonQuery();
     }
+    /// <summary>
+    /// 配置 NLog 日志目标和规则。
+    /// </summary>
+    /// <param name="minLevel">初始最小日志级别。</param>
+    private static void ConfigureLogging(LogLevel minLevel)
+    {
+        try
+        {
+            var config = new LoggingConfiguration();
+#if DEBUG
+                        // 日志格式(layout)，与 XML 配置保持一致
+            const string layout =
+                "[${longdate}] [${level:uppercase=true}] ${logger}\t${message}\t${exception}";
+            const string stacktrace = "${stacktrace}";
+#endif
 
+
+            // 1. 配置 SQLite 数据库目标 (NLog.Database)
+            var dbTarget = new DatabaseTarget("SQLiteDB")
+            {
+                // SQLite 连接字符串，根据需要修改数据库文件路径或连接方式
+                ConnectionString = $"Data Source=\"{DatabasePath}\";",
+                DBProvider = "Microsoft.Data.Sqlite.SqliteConnection, Microsoft.Data.Sqlite", // 使用 SQLite 提供程序
+                CommandText = """
+                              insert into Logs (TimestampUtc, Application, Level, Message, Exception, Logger, EventId)
+                              values ((strftime('%s', @timestamputc) * 1000) + (strftime('%f', @timestamputc) - strftime('%S', @timestamputc)) * 1000, @application, @level, @message, @exception, @logger, @EventId);
+                              """
+
+            };
+            // 设置参数，对应上述 CommandText 中的占位符
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@timestamputc", "${longdate}"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@application", "FangJia"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@level", "${uppercase:${level}}"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@logger", "${logger}"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@message", "${message}"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@exception", "${exception:format=tostring}"));
+            dbTarget.Parameters.Add(new DatabaseParameterInfo("@EventId",
+                "${event-properties:item=EventId_Id:whenEmpty=0}"));
+#if DEBUG
+            // 2. 配置 Debug 输出目标 (使用 MethodCallTarget 调用 Debug.WriteLine)
+            var debugTarget = new MethodCallTarget("debugOutput")
+            {
+                Parameters =
+                {
+                    new MethodCallParameter("logMessage", layout) ,
+                    new MethodCallParameter("stacktrace", stacktrace),
+                    new MethodCallParameter("level", "${uppercase:${level}}")
+                }, // 使用相同的layout格式生成日志消息文本
+                ClassName = typeof(LogHelper).FullName + ", FangJia", // 指定静态方法所在类
+                MethodName = nameof(WriteToDebug) // 指定要调用的静态方法名
+            };
+#endif
+            // 3. 注册我们将在本类中定义的静态方法，以匹配 MethodCallTarget 调用签名
+            config.AddTarget(dbTarget);
+#if DEBUG
+            config.AddTarget(debugTarget);
+#endif
+            // 4. 设置日志规则：所有 Logger 名称 (*) 从指定级别及以上的日志，写入上述两个目标
+            var rule = new LoggingRule("*", minLevel, dbTarget);
+            config.LoggingRules.Add(rule);
+#if DEBUG
+            var debugRule = new LoggingRule("*", minLevel, debugTarget);
+            config.LoggingRules.Add(debugRule);
+#endif
+            // 5. 应用配置
+            LogManager.Configuration = config;
+            LogManager.ThrowConfigExceptions = true;
+            LogManager.ThrowExceptions = true;
+            NLog.Common.InternalLogger.LogFile = AppHelper.GetFilePath("nlog-internal.log");
+            NLog.Common.InternalLogger.LogLevel = LogLevel.Warn;
+            NLog.Common.InternalLogger.LogToConsole = true;
+            NLog.Common.InternalLogger.IncludeTimestamp = true;
+            // 6. 重新配置现有的 Logger
+            LogManager.ReconfigExistingLoggers();
+        }
+        catch (NLogConfigurationException exception)
+        {
+            Logger.Error(exception.Message, exception);
+        }
+        catch (Exception exception)
+        {
+            Logger.Error(exception);
+        }
+    }
+#if DEBUG
+
+
+    /// <summary>
+    /// 提供给 MethodCallTarget 调用的静态方法。
+    /// 根据日志级别选择控制台前景色并输出日志到 Debug。
+    /// </summary>
+    public static void WriteToDebug(string logMessage, string stacktrace, string level)
+    {
+
+        // 输出日志到调试控制台
+        Debug.WriteLine(logMessage);
+        switch (level)
+        {
+            case "WARM" or "ERROR" or "FATAL":
+                Debug.WriteLine(stacktrace);
+                break;
+        }
+    }
+#endif
 
     public static LogLevel LogLevel
     {
@@ -168,6 +278,13 @@ public static class LogHelper
                 EventId = reader.GetInt32(6)
             };
         }
+    }
+    /// <summary>
+    /// 获取 NLog 的 Logger 对象，供外部记录日志使用。
+    /// </summary>
+    public static Logger GetLogger(string? className)
+    {
+        return LogManager.GetLogger(className);
     }
 }
 
