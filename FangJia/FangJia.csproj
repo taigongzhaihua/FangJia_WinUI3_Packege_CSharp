@@ -46,7 +46,6 @@
 		<None Remove="Assets\StoreLogo.ico" />
 		<None Remove="Assets\StoreLogo.svg" />
 		<None Remove="Data.db" />
-		<None Remove="Nlog.config" />
 		<None Remove="Pages\AboutPage.xaml" />
 		<None Remove="Pages\DataPage.xaml" />
 		<None Remove="Pages\Data\CasePage.xaml" />
@@ -82,8 +81,8 @@
 		<PackageReference Include="Autofac" Version="8.2.0" />
 		<PackageReference Include="Autofac.Extras.NLog" Version="4.0.2" />
 		<PackageReference Include="CommunityToolkit.Common" Version="8.4.0" />
-		<PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.DataTable" Version="0.1.250206-build.2040" />
-		<PackageReference Include="CommunityToolkit.Labs.WinUI.Shimmer" Version="0.1.250206-build.2040" />
+		<PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.DataTable" Version="0.1.250226-build.2050" />
+		<PackageReference Include="CommunityToolkit.Labs.WinUI.Shimmer" Version="0.1.250226-build.2050" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250129-preview2" />
@@ -98,12 +97,12 @@
 		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250129-preview2" />
 		<PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.1.25081.1" />
+		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.0-preview.1.25081.1" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0-preview.1.25080.5" />
 		<PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250208002-preview1" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250127003-experimental3" />
 		<PackageReference Include="NLog" Version="5.4.0" />
 		<PackageReference Include="NLog.Database" Version="5.4.0" />
 		<PackageReference Include="NLog.Extensions.Logging" Version="5.4.0" />
@@ -116,9 +115,6 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="Data.db">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Include="Nlog.config">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
@@ -207,7 +203,7 @@
 		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
 		<GenerateTestArtifacts>True</GenerateTestArtifacts>
 		<AppxBundle>Never</AppxBundle>
-		<AppInstallerUri>C:\Users\zzy94\source\repos\FangJia%28pakeged%29\FangJia\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\AppPackages</AppInstallerUri>
+		<AppInstallerUri>C:\Users\zzy94\source\repos\FangJia%28pakeged%29\FangJia\bin\x64\Debug\net9.0-windows10.0.22000.0\win-x64\AppPackages\</AppInstallerUri>
 		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
 		<PublishAot>True</PublishAot>
 		<ApplicationIcon>Assets\StoreLogo.ico</ApplicationIcon>
