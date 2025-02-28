@@ -7,9 +7,10 @@
 // FangJia 仅做学习交流使用
 // 转载请注明出处
 //------------------------------------------------------------------------
+
+using FangJia.Helpers;
 using Microsoft.Data.Sqlite;
 using NLog;
-using System;
 using System.IO;
 
 namespace FangJia.DataAccess;
@@ -17,7 +18,7 @@ namespace FangJia.DataAccess;
 internal class DataManager
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private static readonly string DatabasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data.db");
+    private static readonly string DatabasePath = AppHelper.GetFilePath("Data.db");
     private static readonly string ConnectionString = $"Data Source={DatabasePath};";
 
     /// <summary>
@@ -25,18 +26,18 @@ internal class DataManager
     /// </summary>
     public static void Initialize()
     {
+        Logger.Debug($"查找数据库文件。路径：\"{DatabasePath}\"");
         // 检查文件是否存在
         if (!File.Exists(DatabasePath))
         {
-            Logger.Info($"未找到数据库文件\"{DatabasePath}\"。");
-            Logger.Info("正在创建新数据库文件和表...");
+            Logger.Info($"未找到数据库文件。正在创建新数据库文件和表...");
             // 创建数据库文件并初始化表
             CreateDatabaseAndTable(DatabasePath);
             Logger.Info("数据库文件和表创建成功。");
         }
         else
         {
-            Logger.Info($"数据库文件\"{DatabasePath}\"已存在。");
+            Logger.Info($"数据库文件已存在。");
         }
     }
 
