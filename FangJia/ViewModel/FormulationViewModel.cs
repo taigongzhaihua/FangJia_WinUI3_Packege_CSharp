@@ -18,7 +18,6 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -29,7 +28,7 @@ namespace FangJia.ViewModel;
 public partial class FormulationViewModel(FormulationManager formulationManager) : ObservableObject
 {
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
-    private readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    internal readonly Logger Logger = LogManager.GetCurrentClassLogger();
     [ObservableProperty] public partial ObservableCollection<FormulationCategory> Categories { get; set; } = [];
     [ObservableProperty] public partial FormulationCategory? SelectedCategory { get; set; }
     [ObservableProperty] public partial Formulation? SelectedFormulation { get; set; }
@@ -75,7 +74,7 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
         }
         catch (Exception e)
         {
-            Debug.WriteLine(e);
+            Logger.Error(e);
             throw;
         }
         finally
@@ -141,7 +140,6 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
         catch (Exception e)
         {
             Logger.Error(e);
-            Debug.WriteLine(e);
         }
     }
 
@@ -149,112 +147,143 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
     [RelayCommand]
     public void UpdateFormulation(object key)
     {
-        if (SelectedFormulation == null) return;
-        var s = key as string;
-        switch (s)
+        try
         {
-            case "Name":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Name", SelectedFormulation!.Name!));
-                _ = Categories.Any(category => UpdateCategoryName(SelectedFormulation.Id, false, ref category));
-                break;
-            case "CategoryId":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("CategoryId", SelectedFormulation!.CategoryId.ToString()));
-                UpdateFormulationCategory(SelectedFormulation.Id, SelectedFormulation.CategoryId);
-                break;
-            case "Usage":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Usage", SelectedFormulation!.Usage!));
-                break;
-            case "Effect":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Effect", SelectedFormulation!.Effect!));
-                break;
-            case "Indication":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Indication", SelectedFormulation!.Indication!));
-                break;
-            case "Disease":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Disease", SelectedFormulation!.Disease!));
-                break;
-            case "Application":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Application", SelectedFormulation!.Application!));
-                break;
-            case "Supplement":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Supplement", SelectedFormulation!.Supplement!));
-                break;
-            case "Song":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Song", SelectedFormulation!.Song!));
-                break;
-            case "Notes":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Notes", SelectedFormulation!.Notes!));
-                break;
-            case "Source":
-                _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
-                    ("Source", SelectedFormulation!.Source!));
-                break;
-            default:
-                return;
+            if (SelectedFormulation == null) return;
+            var s = key as string;
+            switch (s)
+            {
+                case "Name":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Name", SelectedFormulation!.Name!));
+                    _ = Categories.Any(category => UpdateCategoryName(SelectedFormulation.Id, false, ref category));
+                    break;
+                case "CategoryId":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("CategoryId", SelectedFormulation!.CategoryId.ToString()));
+                    UpdateFormulationCategory(SelectedFormulation.Id, SelectedFormulation.CategoryId);
+                    break;
+                case "Usage":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Usage", SelectedFormulation!.Usage!));
+                    break;
+                case "Effect":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Effect", SelectedFormulation!.Effect!));
+                    break;
+                case "Indication":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Indication", SelectedFormulation!.Indication!));
+                    break;
+                case "Disease":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Disease", SelectedFormulation!.Disease!));
+                    break;
+                case "Application":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Application", SelectedFormulation!.Application!));
+                    break;
+                case "Supplement":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Supplement", SelectedFormulation!.Supplement!));
+                    break;
+                case "Song":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Song", SelectedFormulation!.Song!));
+                    break;
+                case "Notes":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Notes", SelectedFormulation!.Notes!));
+                    break;
+                case "Source":
+                    _ = formulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
+                        ("Source", SelectedFormulation!.Source!));
+                    break;
+                default:
+                    return;
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
         }
     }
 
-    #region UpdateFormulationCommand 辅助函数
+    #region UpdateFormulation辅助方法
 
     private bool UpdateCategoryName(int id, bool isCategory, ref FormulationCategory category)
     {
-        if (category.IsCategory != isCategory)
-            return category.Children.Any(child => UpdateCategoryName(id, isCategory, ref child));
-        if (category.Id != id) return false;
-        category.Name = SelectedFormulation?.Name ?? string.Empty;
-        return true;
+        try
+        {
+            if (category.IsCategory != isCategory)
+                return category.Children.Any(child => UpdateCategoryName(id, isCategory, ref child));
+            if (category.Id != id) return false;
+            category.Name = SelectedFormulation?.Name ?? string.Empty;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+            throw;
+        }
     }
 
     private void UpdateFormulationCategory(int formulationId, int newCategoryId)
     {
-        FormulationCategory? oldCategory = null;
-        FormulationCategory? newCategory = null;
-        FormulationCategory? target = null;
-        if (!Categories.Any(category =>
-                FindCategoryFromCategory(formulationId, false, ref category!, out oldCategory, out target))) return;
-
-        oldCategory?.Children.Remove(target!);
-        if (Categories.Any(category =>
-                FindCategoryFromCategory(newCategoryId, true, ref category!, out _, out newCategory)))
+        try
         {
-            newCategory?.Children.Add(target!);
+            FormulationCategory? oldCategory = null;
+            FormulationCategory? newCategory = null;
+            FormulationCategory? target = null;
+            if (!Categories.Any(category =>
+                    FindCategoryFromCategory(formulationId, false, ref category!, out oldCategory, out target))) return;
+
+            oldCategory?.Children.Remove(target!);
+            if (Categories.Any(category =>
+                    FindCategoryFromCategory(newCategoryId, true, ref category!, out _, out newCategory)))
+            {
+                newCategory?.Children.Add(target!);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+            throw;
         }
     }
 
-    private static bool FindCategoryFromCategory(
+    private bool FindCategoryFromCategory(
         int id, bool isCategory, ref FormulationCategory category,
         out FormulationCategory? parent, out FormulationCategory? target)
     {
-        if (category.IsCategory != isCategory || category.Id != id)
+        try
         {
-            foreach (var t in category.Children)
+            if (category.IsCategory != isCategory || category.Id != id)
             {
-                var child = t;
-                if (!FindCategoryFromCategory(id, isCategory, ref child, out parent, out target)) continue;
-                parent ??= category;
+                foreach (var t in category.Children)
+                {
+                    var child = t;
+                    if (!FindCategoryFromCategory(id, isCategory, ref child, out parent, out target)) continue;
+                    parent ??= category;
+                    return true;
+                }
+            }
+            else if (category.Id == id)
+            {
+                parent = null;
+                target = category;
                 return true;
             }
-        }
-        else if (category.Id == id)
-        {
-            parent = null;
-            target = category;
-            return true;
-        }
 
-        parent = null;
-        target = null;
-        return false;
+            parent = null;
+            target = null;
+            return false;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+            throw;
+        }
     }
 
     #endregion
@@ -262,27 +291,41 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
     [RelayCommand]
     public void InsertNewFormulationCompositions()
     {
-        if (SelectedFormulation == null) return;
-        var fc = new FormulationComposition
+        try
         {
-            FormulationId = SelectedFormulation.Id,
-            DrugId = 0,
-            DrugName = "药物名称",
-            Effect = "功效",
-            Position = "",
-            Notes = "备注"
-        };
-        fc.Id = formulationManager.InsertFormulationComposition(fc).Result;
-        SelectedFormulation.Compositions?.Add(fc);
+            if (SelectedFormulation == null) return;
+            var fc = new FormulationComposition
+            {
+                FormulationId = SelectedFormulation.Id,
+                DrugId = 0,
+                DrugName = "药物名称",
+                Effect = "功效",
+                Position = "",
+                Notes = "备注"
+            };
+            fc.Id = formulationManager.InsertFormulationComposition(fc).Result;
+            SelectedFormulation.Compositions?.Add(fc);
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+        }
     }
 
     [RelayCommand]
     public void DeleteFormulationCompositions()
     {
-        if (SelectedFormulation == null) return;
-        if (SelectedComposition == null) return;
-        _ = formulationManager.DeleteFormulationComposition(SelectedComposition.Id);
-        SelectedFormulation.Compositions?.Remove(SelectedComposition);
+        try
+        {
+            if (SelectedFormulation == null) return;
+            if (SelectedComposition == null) return;
+            _ = formulationManager.DeleteFormulationComposition(SelectedComposition.Id);
+            SelectedFormulation.Compositions?.Remove(SelectedComposition);
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+        }
     }
 
     [RelayCommand]
@@ -298,31 +341,37 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
         catch (Exception e)
         {
             Logger.Error(e);
-            Debug.WriteLine(e);
         }
     }
 
     private async Task DeleteCategoryFromDatabase(FormulationCategory? category)
     {
-        if (category == null)
-            return;
-
-        if (category.IsCategory)
+        try
         {
-            // 并行删除所有子分类
-            var deleteTasks = category.Children.Select(DeleteCategoryFromDatabase);
-            await Task.WhenAll(deleteTasks);
-
-            // 删除当前分类
-            if (category.Id >= 0)
-            {
-                await formulationManager.DeleteCategory(category.Id);
+            if (category == null)
                 return;
-            }
-        }
 
-        // 对于非分类的情况或 Id 小于0的情况
-        await formulationManager.DeleteFormulation(category.Id);
+            if (category.IsCategory)
+            {
+                // 并行删除所有子分类
+                var deleteTasks = category.Children.Select(DeleteCategoryFromDatabase);
+                await Task.WhenAll(deleteTasks);
+
+                // 删除当前分类
+                if (category.Id >= 0)
+                {
+                    await formulationManager.DeleteCategory(category.Id);
+                    return;
+                }
+            }
+
+            // 对于非分类的情况或 Id 小于0的情况
+            await formulationManager.DeleteFormulation(category.Id);
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e);
+        }
     }
 
     [RelayCommand]
@@ -366,7 +415,7 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
 
                     break;
                 case (string firstCategory, string secondCategory):
-                    Debug.WriteLine(firstCategory, secondCategory);
+                    Logger.Error(firstCategory, secondCategory);
                     var categoryId = await formulationManager.InsertCategoryAsync(firstCategory, secondCategory);
                     if (App.MainDispatcherQueue != null)
                     {
@@ -390,7 +439,6 @@ public partial class FormulationViewModel(FormulationManager formulationManager)
         catch (Exception e)
         {
             Logger.Error(e);
-            Debug.WriteLine(e);
         }
     }
 }
