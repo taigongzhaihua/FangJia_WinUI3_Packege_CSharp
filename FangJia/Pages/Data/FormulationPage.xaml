@@ -8,13 +8,11 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:common="using:FangJia.Common"
     xmlns:control="using:TGZH.Control"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
-    xmlns:behaviors="using:CommunityToolkit.WinUI.Behaviors"
     xmlns:converters="using:FangJia.Converters"
     xmlns:animatedVisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     xmlns:winUi="using:CommunityToolkit.WinUI"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
+    xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
     <Page.Resources>
@@ -90,7 +88,7 @@
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
                                                        Storyboard.TargetProperty="Padding">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,38,0,0" />
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="16,38,0,0" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
                                                        Storyboard.TargetProperty="Background">
@@ -165,8 +163,8 @@
                 <Grid>
                     <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
                             Margin="8,8,0,0"
-                            BorderThickness="0" Canvas.ZIndex="1">
-                        <Grid x:Name="PaneGrid">
+                            BorderThickness="0" Canvas.ZIndex="1" Padding="0,0,0,0">
+                        <Grid x:Name="PaneGrid" CornerRadius="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
@@ -181,16 +179,20 @@
                                 <ResourceDictionary>
                                     <ResourceDictionary.ThemeDictionaries>
                                         <ResourceDictionary x:Key="Default">
-                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
                                         </ResourceDictionary>
                                         <ResourceDictionary x:Key="HighContrast">
-                                            <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="SystemControlBackgroundBaseLowBrush" />
                                         </ResourceDictionary>
                                         <ResourceDictionary x:Key="Light">
-                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
                                         </ResourceDictionary>
                                         <ResourceDictionary x:Key="Dark">
-                                            <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
                                         </ResourceDictionary>
                                     </ResourceDictionary.ThemeDictionaries>
                                 </ResourceDictionary>
@@ -215,7 +217,7 @@
                                     Padding="4" Margin="4,4,2,4"
                                     VerticalAlignment="Center"
                                     ToolTipService.ToolTip="新增" HorizontalAlignment="Right">
-                                <FontIcon Glyph="&#xE710;" FontSize="16"/>
+                                <FontIcon Glyph="&#xE710;" FontSize="16" />
                             </Button>
                             <Button Grid.Row="0" Grid.Column="2"
                                     Click="CategoryDeleteButton_OnClick"
@@ -223,14 +225,14 @@
                                     Padding="4" Margin="2,4,8,4"
                                     VerticalAlignment="Center"
                                     ToolTipService.ToolTip="删除" HorizontalAlignment="Right">
-                                    <FontIcon Glyph="&#xE738;" FontSize="16" />
+                                <FontIcon Glyph="&#xE738;" FontSize="16" />
                             </Button>
                             <TreeView x:Name="FormulationCategoryTree"
                                       Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
                                       Padding="10" Margin="10"
                                       MinWidth="280"
                                       CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
-                                      SelectionMode="Single" 
+                                      SelectionMode="Single"
                                       SelectionChanged="TreeView_OnSelectionChanged"
                                       BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
                                       SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}"
@@ -286,12 +288,12 @@
                                     Text="{x:Bind ViewModel.SelectedFormulation.Name,Mode=TwoWay,FallbackValue='九转金丹'}"
                                     FontSize="26" FontWeight="SemiBold"
                                     HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    Padding="8,6,8,10" Margin="0"
+                                    Padding="8,6,10,12" Margin="0"
                                     SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
                                     SaveCommandParameter="Name" />
                                 <control:EditableTextBlock IsMultiLine="False" InteractionMode="Button"
                                                            VerticalAlignment="Bottom"
-                                                           Padding="8,6,10,12" Margin="2"
+                                                           Padding="8,6,10,12" Margin="0"
                                                            Text="{x:Bind ViewModel.SelectedFormulation.Source,Mode=TwoWay,FallbackValue='《太上老君炼丹录》'}"
                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                            SaveCommand="{x:Bind ViewModel.UpdateFormulationCommand}"
@@ -308,7 +310,7 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <Image Grid.Column="0" Grid.Row="1" Margin="4"
+                            <Image Grid.Column="0" Grid.Row="1" Margin="4" x:Name="Image"
                                    Source="{x:Bind ViewModel.SelectedFormulation.FormulationImage.Image,Mode=OneWay,Converter={StaticResource ByteArrayToImgConverter},FallbackValue={x:Null}}" />
                             <control:EditableTextBlock Grid.Column="1" Grid.Row="1"
                                                        Text="{x:Bind ViewModel.SelectedFormulation.Song,Mode=TwoWay,FallbackValue='朕与将军解战袍，芙蓉帐暖度春宵。轻拢慢捻抹复挑，从此君王不早朝。'}"
@@ -323,68 +325,53 @@
                                                Margin="8,6,8,10" />
                                 </control:EditableTextBlock.Header>
                             </control:EditableTextBlock>
-                            <ListView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                      ItemsSource="{x:Bind ViewModel.SelectedFormulation.Compositions,Mode=TwoWay,FallbackValue={x:Null}}"
-                                      Margin="0,12" Padding="4" CornerRadius="4"
-                                      SelectedItem="{x:Bind ViewModel.SelectedComposition,Mode=TwoWay,FallbackValue={x:Null}}"
-                                      Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
-                                <ListView.Header>
-                                    <Border Padding="20,6,0,6"
-                                            Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
-                                            CornerRadius="4">
-                                        <interactivity:Interaction.Behaviors>
-                                            <behaviors:StickyHeaderBehavior />
-                                        </interactivity:Interaction.Behaviors>
-                                        <controls:DataTable>
-                                            <controls:DataColumn Content="君臣佐使" CanResize="True"
-                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
-                                                                 MinWidth="12" DesiredWidth="Auto" />
-                                            <controls:DataColumn Content="组成" CanResize="True"
-                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
-                                                                 MinWidth="12" DesiredWidth="Auto" />
-                                            <controls:DataColumn Content="方中功效" CanResize="True"
-                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
-                                                                 MinWidth="12" DesiredWidth="*" />
-                                            <controls:DataColumn Content="备注" CanResize="True"
-                                                                 HorizontalAlignment="Stretch" Margin="2,0,0,0"
-                                                                 MinWidth="12" DesiredWidth="*" />
-                                        </controls:DataTable>
-                                    </Border>
-                                </ListView.Header>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="common:FormulationComposition">
-                                        <!--  We set HorizontalAlignment to Left here as we're not stretching our content with a star column  -->
-                                        <controls:DataRow HorizontalAlignment="Left" Margin="0">
-                                            <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Position,Mode=TwoWay}"
-                                                                       Margin="4,0"
-                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
-                                                                       SaveCommandParameter="Position" />
-                                            <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind DrugName,Mode=TwoWay}"
-                                                                       Margin="4,0"
-                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
-                                                                       SaveCommandParameter="DrugName" />
-                                            <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Effect,Mode=TwoWay}"
-                                                                       Margin="4,0"
-                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
-                                                                       SaveCommandParameter="Effect" />
-                                            <control:EditableTextBlock InteractionMode="DoubleClick"
-                                                                       Text="{x:Bind Notes,Mode=TwoWay}"
-                                                                       Margin="4,0"
-                                                                       SaveCommand="{x:Bind UpdateFormulationCompositionCommand}"
-                                                                       SaveCommandParameter="Notes" />
-                                        </controls:DataRow>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                                <ListView.ItemContainerStyle>
-                                    <Style BasedOn="{StaticResource DefaultListViewItemStyle}"
-                                           TargetType="ListViewItem">
-                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                            </ListView>
+                            <!-- ReSharper disable UnusedMember.Local -->
+                            <controls1:DataGrid x:Name="CompositionsDataGrid"
+                                                Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                                ItemsSource="{x:Bind ViewModel.SelectedFormulation.Compositions, Mode=OneWay,FallbackValue={x:Null}}"
+                                                SelectedItem="{x:Bind ViewModel.SelectedComposition, Mode=TwoWay}"
+                                                Margin="0,12" Padding="4" CornerRadius="4"
+                                                Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}"
+                                                AutoGenerateColumns="False"
+                                                GridLinesVisibility="None"
+                                                HeadersVisibility="Column"
+                                                SelectionMode="Single"
+                                                CellEditEnding="DataGrid_CellEditEnding">
+                                <!-- ReSharper restore UnusedMember.Local -->
+
+
+
+                                <!-- 使用共享样式的列定义 -->
+                                <controls1:DataGrid.Columns>
+                                    <controls1:DataGridTextColumn Header="君臣佐使"
+                                                                  Binding="{Binding Position}"
+                                                                  Width="Auto"
+                                                                  Tag="Position"
+                                                                  ElementStyle="{StaticResource CellTextStyle}"
+                                                                  EditingElementStyle="{StaticResource CellEditStyle}" />
+
+                                    <controls1:DataGridTextColumn Header="组成"
+                                                                  Binding="{Binding DrugName}"
+                                                                  Width="Auto"
+                                                                  Tag="DrugName"
+                                                                  ElementStyle="{StaticResource CellTextStyle}"
+                                                                  EditingElementStyle="{StaticResource CellEditStyle}" />
+
+                                    <controls1:DataGridTextColumn Header="方中功效"
+                                                                  Binding="{Binding Effect}"
+                                                                  Width="*"
+                                                                  Tag="Effect"
+                                                                  ElementStyle="{StaticResource CellTextStyle}"
+                                                                  EditingElementStyle="{StaticResource CellEditStyle}" />
+
+                                    <controls1:DataGridTextColumn Header="备注"
+                                                                  Binding="{Binding Notes}"
+                                                                  Width="*"
+                                                                  Tag="Notes"
+                                                                  ElementStyle="{StaticResource CellTextStyle}"
+                                                                  EditingElementStyle="{StaticResource CellEditStyle}" />
+                                </controls1:DataGrid.Columns>
+                            </controls1:DataGrid>
                             <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal" HorizontalAlignment="Right"
                                         Spacing="8">

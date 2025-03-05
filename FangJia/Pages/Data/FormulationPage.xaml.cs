@@ -8,9 +8,9 @@
 // 转载请注明出处
 //------------------------------------------------------------------------
 
-
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Media;
+using CommunityToolkit.WinUI.UI.Controls;
 using FangJia.Common;
 using FangJia.Helpers;
 using FangJia.ViewModel;
@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 namespace FangJia.Pages;
 
 /// <summary>
-/// 
+/// 方剂页面
 /// </summary>
 public sealed partial class FormulationPage
 {
@@ -37,75 +37,134 @@ public sealed partial class FormulationPage
     private readonly DispatcherQueue _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    // 常量定义
+    private const string CategoryIdProperty = "CategoryId";
+
     public FormulationPage()
     {
         InitializeComponent();
         _ = ViewModel.LoadCategoriesAsync(_dispatcherQueue);
+
+        // 注册事件处理
+        ViewModel.SelectedFormulaChanged += ViewModelSelectedFormulaChanged;
+        ViewModel.FormulaImageChanged += ViewModelOnFormulaImageChanged;
+
+        // 添加页面卸载时的事件取消订阅
+        Unloaded += Page_Unloaded;
     }
+
+    private void Page_Unloaded(object sender, RoutedEventArgs e)
+    {
+        // 取消事件订阅，防止内存泄漏
+        ViewModel.SelectedFormulaChanged -= ViewModelSelectedFormulaChanged;
+        ViewModel.FormulaImageChanged -= ViewModelOnFormulaImageChanged;
+        Unloaded -= Page_Unloaded;
+    }
+
+    #region 动画处理
+
+    /// <summary>
+    /// 应用淡入淡出动画到指定元素
+    /// </summary>
+    private void ApplyFadeAnimation(UIElement element, double fromValue, double toValue, double durationSeconds)
+    {
+        var animation = new DoubleAnimationUsingKeyFrames
+        {
+            Duration = TimeSpan.FromSeconds(durationSeconds)
+        };
+
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame
+        {
+            Value = fromValue,
+            KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))
+        });
+
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame
+        {
+            Value = toValue,
+            KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(durationSeconds))
+        });
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(animation);
+
+        Storyboard.SetTarget(animation, element);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+
+        storyboard.Begin();
+    }
+
+    /// <summary>
+    /// 对多个元素应用淡入淡出动画
+    /// </summary>
+    private void ApplyFadeAnimationToElements(double fromValue, double toValue, double durationSeconds, params UIElement[] elements)
+    {
+        var storyboard = new Storyboard();
+
+        foreach (var element in elements)
+        {
+            var animation = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = TimeSpan.FromSeconds(durationSeconds)
+            };
+
+            animation.KeyFrames.Add(new LinearDoubleKeyFrame
+            {
+                Value = fromValue,
+                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))
+            });
+
+            animation.KeyFrames.Add(new LinearDoubleKeyFrame
+            {
+                Value = toValue,
+                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(durationSeconds))
+            });
+
+            Storyboard.SetTarget(animation, element);
+            Storyboard.SetTargetProperty(animation, "Opacity");
+            storyboard.Children.Add(animation);
+        }
+
+        storyboard.Begin();
+    }
+
+    private void ViewModelOnFormulaImageChanged(object sender, RoutedEventArgs e)
+    {
+        ApplyFadeAnimation(Image, 0.0, 1.0, 0.5);
+    }
+
+    private void ViewModelSelectedFormulaChanged(object sender, RoutedEventArgs e)
+    {
+        ApplyFadeAnimation(Viewer, 0.0, 1.0, 0.2);
+    }
+
+    #endregion
+
+    #region TreeView 操作
 
     private void TreeView_OnSelectionChanged(TreeView _, TreeViewSelectionChangedEventArgs args)
     {
         if (args.AddedItems.FirstOrDefault() is not FormulationCategory selectedCategory) return;
+
         // 递归展开选中的项
         ExpandTreeViewItem(selectedCategory);
 
         // 递归收起未被选中的项
         CollapseUnselectedItems(FormulationCategoryTree.RootNodes, selectedCategory);
-        if (!selectedCategory.IsCategory)
-        {
-            // 创建关键帧动画对象
-            var animation = new DoubleAnimationUsingKeyFrames
-            {
-                // 总时长：1秒下行 + 50毫秒停顿 + 1秒上行 = 2.05秒
-                Duration = TimeSpan.FromSeconds(1.0)
-            };
 
-            // 添加起始关键帧：透明度1.0（动画开始时）
-            animation.KeyFrames.Add(new LinearDoubleKeyFrame
-            {
-                Value = 1.0,
-                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))
-            });
+        if (selectedCategory.IsCategory || args.RemovedItems.Count <= 0) return;
 
-            // 1秒后，透明度过渡到0.0
-            animation.KeyFrames.Add(new LinearDoubleKeyFrame
-            {
-                Value = 0.0,
-                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.2))
-            });
-
-            // 插入一个离散关键帧，在1.05秒时依然保持0.0，起到50毫秒的停顿效果
-            animation.KeyFrames.Add(new DiscreteDoubleKeyFrame
-            {
-                Value = 0.0,
-                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.8))
-            });
-
-            // 2.05秒时，透明度过渡回1.0
-            animation.KeyFrames.Add(new LinearDoubleKeyFrame
-            {
-                Value = 1.0,
-                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(1.0))
-            });
-
-            // 创建 Storyboard 并添加动画
-            var storyboard = new Storyboard();
-            storyboard.Children.Add(animation);
-
-            // 设置动画目标属性和目标控件
-            Storyboard.SetTarget(animation, Viewer);
-            Storyboard.SetTargetProperty(animation, "Opacity");
-
-            // 启动动画
-            storyboard.Begin();
-        }
+        // 创建渐隐动画
+        ApplyFadeAnimationToElements(1.0, 0.0, 0.1, Viewer, Image);
     }
 
     /// <summary>
-    /// 递归查找 `TreeViewNode` 并展开匹配的项
+    /// 递归查找并展开匹配的项
     /// </summary>
     private void ExpandTreeViewItem(FormulationCategory? selectedCategory)
     {
+        if (selectedCategory == null) return;
+
         foreach (var node in FormulationCategoryTree.RootNodes)
         {
             if (ExpandIfMatch(node, selectedCategory))
@@ -114,11 +173,8 @@ public sealed partial class FormulationPage
     }
 
     /// <summary>
-    /// 递归展开匹配的 `TreeViewNode`
+    /// 递归展开匹配的树节点
     /// </summary>
-    /// <param name="node"></param>
-    /// <param name="targetCategory"></param>
-    /// <returns></returns>
     private static bool ExpandIfMatch(TreeViewNode node, FormulationCategory? targetCategory)
     {
         if (node.Content is FormulationCategory category && category == targetCategory)
@@ -130,16 +186,18 @@ public sealed partial class FormulationPage
         if (!node.Children.Any(child => ExpandIfMatch(child, targetCategory))) return false;
         node.IsExpanded = true; // 递归展开父级
         return true;
+
     }
 
     /// <summary>
-    /// 递归收起未被选中的 `TreeViewNode`
+    /// 递归收起未被选中的节点
     /// </summary>
     private static void CollapseUnselectedItems(IList<TreeViewNode> nodes, FormulationCategory? selectedCategory)
     {
         foreach (var node in nodes)
         {
             if (node.Content is not FormulationCategory) continue;
+
             // 如果当前项不是选中项，且它的子项中不包含选中项，则收起
             if (!ContainsSelectedItem(node, selectedCategory))
             {
@@ -152,7 +210,7 @@ public sealed partial class FormulationPage
     }
 
     /// <summary>
-    /// 检查 `TreeViewNode` 是否包含选中的子项
+    /// 检查节点是否包含选中的子项
     /// </summary>
     private static bool ContainsSelectedItem(TreeViewNode node, FormulationCategory? selectedCategory)
     {
@@ -164,29 +222,31 @@ public sealed partial class FormulationPage
         return node.Children.Any(child => ContainsSelectedItem(child, selectedCategory));
     }
 
+    #endregion
+
+    #region 搜索功能
+
     private void SearchBox_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         // 只在用户输入时更新建议（忽略程序设置文本的情况）
         if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+
         var query = sender.Text.Trim();
 
         // 如果输入为空，则清空建议列表
         if (string.IsNullOrEmpty(query))
         {
             sender.ItemsSource = null;
+            return;
         }
-        else
-        {
-            // 根据输入关键字过滤数据（不区分大小写的匹配）
-            var suggestions =
-                ViewModel.SearchWords
-                    .Where(item => item.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-                    .ToList();
 
-            sender.ItemsSource = suggestions;
-        }
+        // 根据输入关键字过滤数据（不区分大小写的匹配）
+        var suggestions = ViewModel.SearchWords
+            .Where(item => item.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
+
+        sender.ItemsSource = suggestions;
     }
-
 
     private void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
@@ -205,9 +265,9 @@ public sealed partial class FormulationPage
 
             await SelectFormulation(query);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Logger.Error($"搜索时出错：{e.Message}", e);
+            HandleException(ex, "搜索");
         }
     }
 
@@ -220,33 +280,37 @@ public sealed partial class FormulationPage
                 f.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase));
 
         if (targetNode == null) return;
+
+        // 使用LINQ简化嵌套循环
+        var categoryEnumerable = from rootNode in FormulationCategoryTree.RootNodes
+                                 where rootNode.Content is FormulationCategory
+                                 let category = (FormulationCategory)rootNode.Content
+                                 from child in category.Children
+                                 from formulation in child.Children
+                                 where formulation.Name == targetNode.Name
+                                 select new { Category = category, SubCategory = child, Formulation = formulation };
+
+        var foundItem = categoryEnumerable.FirstOrDefault();
+        if (foundItem != null)
         {
-            foreach (var node in FormulationCategoryTree.RootNodes)
-            {
-                if (node.Content is not FormulationCategory c) continue;
-                foreach (var child in c.Children)
-                {
-                    foreach (var f in child.Children)
-                    {
-                        if (f.Name != targetNode.Name) continue;
-                        ExpandTreeViewItem(c);
-                        await Task.Delay(50);
-                        ExpandTreeViewItem(child);
-                        await Task.Delay(50);
-                        ViewModel.SelectedCategory = f;
-                        // 递归收起未被选中的项
-                        CollapseUnselectedItems(FormulationCategoryTree.RootNodes, f);
-                    }
-                }
-            }
+            ExpandTreeViewItem(foundItem.Category);
+            await Task.Delay(50);
+            ExpandTreeViewItem(foundItem.SubCategory);
+            await Task.Delay(50);
+            ViewModel.SelectedCategory = foundItem.Formulation;
+            // 递归收起未被选中的项
+            CollapseUnselectedItems(FormulationCategoryTree.RootNodes, foundItem.Formulation);
         }
     }
+
+    #endregion
+
+    #region UI 交互处理
 
     private void PaneOpenOrCloseButton_OnClick(object _, RoutedEventArgs _1)
     {
         SplitView.IsPaneOpen = !SplitView.IsPaneOpen;
     }
-
 
     private void OnAdaptiveStatesCurrentStateChanged(object _, VisualStateChangedEventArgs e)
     {
@@ -258,7 +322,7 @@ public sealed partial class FormulationPage
             case "NarrowState":
                 Effects.SetShadow(Border, new AttachedCardShadow
                 {
-                    Opacity = 0.2,
+                    Opacity = 0.4,
                     BlurRadius = 8,
                     Offset = "2"
                 });
@@ -268,17 +332,32 @@ public sealed partial class FormulationPage
 
     private void OnCategorySelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!ViewModel.IsFormulationSelected) return;
-        if (ViewModel.Flag)
+        // 增强检查逻辑
+        if (!ViewModel.IsFormulationSelected || ViewModel.Flag)
         {
+            // 重置标志但不继续处理
             ViewModel.Flag = false;
             return;
         }
 
-        var query = ViewModel.SelectedFormulation?.Name;
-        ViewModel.UpdateFormulation("CategoryId");
-        _ = SelectFormulation(query!);
+        // 设置Flag防止循环
+        ViewModel.Flag = true;
+
+        try
+        {
+            var query = ViewModel.SelectedFormulation?.Name;
+            ViewModel.UpdateFormulation(CategoryIdProperty);
+            _ = SelectFormulation(query!);
+        }
+        catch (Exception ex)
+        {
+            HandleException(ex, "分类选择变更");
+        }
     }
+
+    #endregion
+
+    #region 删除和新增操作
 
     private void CategoryDeleteButton_OnClick(object sender, RoutedEventArgs e)
     {
@@ -298,7 +377,16 @@ public sealed partial class FormulationPage
 
     private void CategoryInsertButton_OnClick(object sender, RoutedEventArgs e)
     {
-        // 创建 ContentDialog
+        // 创建并显示对话框
+        var dialog = CreateInsertDialog();
+        _ = dialog.ShowAsync();
+    }
+
+    /// <summary>
+    /// 创建新增对话框
+    /// </summary>
+    private ContentDialog CreateInsertDialog()
+    {
         var dialog = new ContentDialog
         {
             Title = "新增",
@@ -310,6 +398,7 @@ public sealed partial class FormulationPage
 
         // 主容器
         var mainPanel = new StackPanel { Spacing = 12 };
+
         // 错误提示
         var infoBar = new InfoBar
         {
@@ -317,91 +406,26 @@ public sealed partial class FormulationPage
             Severity = InfoBarSeverity.Error,
             IsOpen = false
         };
-
         mainPanel.Children.Add(infoBar);
-        // 模式选择区：两个 RadioButton（默认选择“分类”）
-        var modePanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
+
+        // 模式选择区
         var rbCategory = new RadioButton { Content = "分类", IsChecked = true, GroupName = "ModeGroup" };
         var rbFormulation = new RadioButton { Content = "方剂", GroupName = "ModeGroup" };
+
+        var modePanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
         modePanel.Children.Add(rbCategory);
         modePanel.Children.Add(rbFormulation);
         mainPanel.Children.Add(modePanel);
 
-        // 分类模式面板
-        var categoryPanel = new StackPanel { Spacing = 8 };
-        // 第一行：一级分类选择
-        var categoryFirstRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        var cbMainCategory = new ComboBox
-        {
-            Width = 150,
-            PlaceholderText = "一级分类",
-            // 这里假设 ViewModel.CategoryList 是一个集合，比如 List<string> 或其他类型
-            ItemsSource = ViewModel.Categories,
-            DisplayMemberPath = "Name"
-        };
+        // 创建两个面板
+        var categoryPanel = CreateCategoryPanel();
+        var formulationPanel = CreateFormulationPanel();
+        formulationPanel.Visibility = Visibility.Collapsed;
 
-        var txtNewMainCategory = new TextBox
-        { PlaceholderText = "新一级分类", Width = 150, Visibility = Visibility.Collapsed };
-        var tbNewCategory = new ToggleButton { Content = new FontIcon { Glyph = "\uECC8" }, Padding = new Thickness(5) };
-        ToolTipService.SetToolTip(tbNewCategory, "新一级分类");
-        // ToggleButton 切换：选中时显示 TextBox，否则显示 ComboBox
-        tbNewCategory.Checked += (_, _) =>
-        {
-            cbMainCategory.Visibility = Visibility.Collapsed;
-            txtNewMainCategory.Visibility = Visibility.Visible;
-        };
-        tbNewCategory.Unchecked += (_, _) =>
-        {
-            cbMainCategory.Visibility = Visibility.Visible;
-            txtNewMainCategory.Visibility = Visibility.Collapsed;
-        };
-        // 新增二级分类的 TextBox
-        var txtSubCategory = new TextBox { PlaceholderText = "新增二级分类", Width = 150 };
-        categoryFirstRow.Children.Add(cbMainCategory);
-        categoryFirstRow.Children.Add(txtNewMainCategory);
-        categoryFirstRow.Children.Add(tbNewCategory);
-        categoryFirstRow.Children.Add(txtSubCategory);
-        categoryPanel.Children.Add(categoryFirstRow);
-
-
-        // 方剂模式面板（初始隐藏）
-        var formulationPanel = new StackPanel
-        { Spacing = 8, Visibility = Visibility.Collapsed, Orientation = Orientation.Horizontal };
-
-        // 第一个 ComboBox：选择分类（假设 ItemsSource 同 CategoryList，且 SelectedValuePath 为 "Id"）
-        var cbCategoryForFormulation = new ComboBox
-        {
-            Width = 120,
-            PlaceholderText = "选择分类",
-            ItemsSource = ViewModel.Categories,
-            DisplayMemberPath = "Name"
-        };
-
-        // 第二个 ComboBox：选择二级分类
-        var cbSubCategoryForFormulation = new ComboBox
-        {
-            Width = 120,
-            PlaceholderText = "二级分类",
-            DisplayMemberPath = "Name"
-        };
-
-        cbCategoryForFormulation.SelectionChanged += (_, args) =>
-        {
-            cbSubCategoryForFormulation.ItemsSource =
-                (args.AddedItems.FirstOrDefault() as FormulationCategory)?.Children;
-        };
-        // 新建方剂名称的 TextBox
-        var txtFormulationName = new TextBox { PlaceholderText = "新建方剂", Width = 120 };
-
-        formulationPanel.Children.Add(cbCategoryForFormulation);
-        formulationPanel.Children.Add(cbSubCategoryForFormulation);
-        formulationPanel.Children.Add(txtFormulationName);
-
-        // 将两个模式面板添加到主容器中
         mainPanel.Children.Add(categoryPanel);
         mainPanel.Children.Add(formulationPanel);
 
-        // 根据 RadioButton 切换显示的面板
+        // 处理面板切换
         rbCategory.Checked += (_, _) =>
         {
             categoryPanel.Visibility = Visibility.Visible;
@@ -413,113 +437,274 @@ public sealed partial class FormulationPage
             formulationPanel.Visibility = Visibility.Visible;
         };
 
-        // 设置对话框内容
         dialog.Content = mainPanel;
 
-        // PrimaryButton 点击事件：构造 Command 参数并调用 ViewModel 命令
-        dialog.PrimaryButtonClick += async (_, args) =>
+        // 设置确认按钮处理
+        dialog.PrimaryButtonClick += (_, args) =>
+            ValidateAndProcessDialog(args, rbCategory.IsChecked == true, infoBar,
+                categoryPanel, formulationPanel);
+
+        return dialog;
+    }
+
+    /// <summary>
+    /// 创建分类面板
+    /// </summary>
+    private StackPanel CreateCategoryPanel()
+    {
+        var categoryPanel = new StackPanel { Spacing = 8 };
+
+        // 第一行：一级分类选择
+        var categoryFirstRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+
+        var cbMainCategory = new ComboBox
         {
-            try
-            {
-                object? commandParam;
-
-                if (rbCategory.IsChecked == true)
-                {
-                    // 分类模式：先验证一级分类是否填写
-                    if (tbNewCategory.IsChecked == true)
-                    {
-                        // 新大类模式：必须填写新一级分类
-                        if (string.IsNullOrWhiteSpace(txtNewMainCategory.Text))
-                        {
-                            args.Cancel = true;
-                            infoBar.IsOpen = true;
-                            infoBar.Message = "请填写新增一级分类。";
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        // 非新大类模式：必须选择一个一级分类
-                        if (cbMainCategory.SelectedItem == null)
-                        {
-                            args.Cancel = true;
-                            infoBar.IsOpen = true;
-                            infoBar.Message = "请选择一级分类。";
-                            return;
-                        }
-                    }
-
-                    // 分类模式：二级分类为必填项
-                    if (string.IsNullOrWhiteSpace(txtSubCategory.Text))
-                    {
-                        args.Cancel = true;
-                        infoBar.IsOpen = true;
-                        infoBar.Message = "请填写新增二级分类。";
-                        return;
-                    }
-
-                    // 构造参数
-                    var mainCategory = tbNewCategory.IsChecked == true
-                        ? txtNewMainCategory.Text
-                        : ((FormulationCategory)cbMainCategory.SelectedItem)?.Name;
-                    var subCategory = txtSubCategory.Text;
-                    commandParam = Tuple.Create(mainCategory, subCategory);
-                }
-                else
-                {
-                    // 方剂模式：两个 ComboBox 和新建方剂名称均为必填项
-                    if (cbCategoryForFormulation.SelectedItem == null)
-                    {
-                        args.Cancel = true;
-                        infoBar.IsOpen = true;
-                        infoBar.Message = "请选择分类。";
-                        return;
-                    }
-
-                    if (cbSubCategoryForFormulation.SelectedItem == null)
-                    {
-                        args.Cancel = true;
-                        infoBar.IsOpen = true;
-                        infoBar.Message = "请选择二级分类。";
-                        return;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(txtFormulationName.Text))
-                    {
-                        args.Cancel = true;
-                        infoBar.IsOpen = true;
-                        infoBar.Message = "请填写方剂名称。";
-                        return;
-                    }
-
-                    // 这里假设 cbCategoryForFormulation.SelectedValue 为 int 类型
-                    var categoryId = ((FormulationCategory)cbSubCategoryForFormulation.SelectedItem).Id;
-                    var formulationName = txtFormulationName.Text;
-                    commandParam = Tuple.Create(categoryId, formulationName);
-                }
-
-                // 调用 ViewModel 中的命令
-                if (ViewModel.InsertCategoryAndFormulationCommand.CanExecute(commandParam))
-                {
-                    ViewModel.InsertCategoryAndFormulationCommand.Execute(commandParam);
-                }
-
-                await Task.CompletedTask;
-                if (commandParam is (int, string name))
-                {
-                    // 选中新增的方剂
-                    await SelectFormulation(name);
-                }
-            }
-            catch (Exception exception)
-            {
-                Logger.Error($"新增分类或方剂时出错：{exception.Message}", exception);
-                Debug.WriteLine(exception);
-            }
+            Width = 150,
+            PlaceholderText = "一级分类",
+            ItemsSource = ViewModel.Categories,
+            DisplayMemberPath = "Name"
         };
 
+        var txtNewMainCategory = new TextBox
+        {
+            PlaceholderText = "新一级分类",
+            Width = 150,
+            Visibility = Visibility.Collapsed
+        };
 
-        // 显示对话框
-        _ = dialog.ShowAsync();
+        var tbNewCategory = new ToggleButton
+        {
+            Content = new FontIcon { Glyph = "\uECC8" },
+            Padding = new Thickness(5)
+        };
+        ToolTipService.SetToolTip(tbNewCategory, "新一级分类");
+
+        // ToggleButton 切换控制
+        tbNewCategory.Checked += (_, _) =>
+        {
+            cbMainCategory.Visibility = Visibility.Collapsed;
+            txtNewMainCategory.Visibility = Visibility.Visible;
+        };
+        tbNewCategory.Unchecked += (_, _) =>
+        {
+            cbMainCategory.Visibility = Visibility.Visible;
+            txtNewMainCategory.Visibility = Visibility.Collapsed;
+        };
+
+        // 新增二级分类的 TextBox
+        var txtSubCategory = new TextBox { PlaceholderText = "新增二级分类", Width = 150 };
+
+        categoryFirstRow.Children.Add(cbMainCategory);
+        categoryFirstRow.Children.Add(txtNewMainCategory);
+        categoryFirstRow.Children.Add(tbNewCategory);
+        categoryFirstRow.Children.Add(txtSubCategory);
+
+        categoryPanel.Children.Add(categoryFirstRow);
+
+        // 将ComboBox和TextBox设置为面板的Tag，以便后续访问
+        categoryPanel.Tag = new
+        {
+            MainCategoryComboBox = cbMainCategory,
+            NewMainCategoryTextBox = txtNewMainCategory,
+            NewCategoryToggle = tbNewCategory,
+            SubCategoryTextBox = txtSubCategory
+        };
+
+        return categoryPanel;
     }
+
+    /// <summary>
+    /// 创建方剂面板
+    /// </summary>
+    private StackPanel CreateFormulationPanel()
+    {
+        var formulationPanel = new StackPanel
+        {
+            Spacing = 8,
+            Orientation = Orientation.Horizontal
+        };
+
+        // 分类选择
+        var cbCategoryForFormulation = new ComboBox
+        {
+            Width = 120,
+            PlaceholderText = "选择分类",
+            ItemsSource = ViewModel.Categories,
+            DisplayMemberPath = "Name"
+        };
+
+        // 二级分类选择
+        var cbSubCategoryForFormulation = new ComboBox
+        {
+            Width = 120,
+            PlaceholderText = "二级分类",
+            DisplayMemberPath = "Name"
+        };
+
+        // 绑定联动
+        cbCategoryForFormulation.SelectionChanged += (_, args) =>
+        {
+            cbSubCategoryForFormulation.ItemsSource =
+                (args.AddedItems.FirstOrDefault() as FormulationCategory)?.Children;
+        };
+
+        // 新建方剂名称
+        var txtFormulationName = new TextBox { PlaceholderText = "新建方剂", Width = 120 };
+
+        formulationPanel.Children.Add(cbCategoryForFormulation);
+        formulationPanel.Children.Add(cbSubCategoryForFormulation);
+        formulationPanel.Children.Add(txtFormulationName);
+
+        // 将控件存储在Tag中以便后续访问
+        formulationPanel.Tag = new
+        {
+            CategoryComboBox = cbCategoryForFormulation,
+            SubCategoryComboBox = cbSubCategoryForFormulation,
+            FormulationNameTextBox = txtFormulationName
+        };
+
+        return formulationPanel;
+    }
+
+    /// <summary>
+    /// 验证并处理对话框输入
+    /// </summary>
+    private async void ValidateAndProcessDialog(ContentDialogButtonClickEventArgs args, bool isCategoryMode,
+        InfoBar infoBar, StackPanel categoryPanel, StackPanel formulationPanel)
+    {
+        try
+        {
+            object? commandParam;
+
+            if (isCategoryMode)
+            {
+                // 获取分类面板中的控件
+                dynamic categoryControls = categoryPanel.Tag;
+                var cbMainCategory = (ComboBox)categoryControls.MainCategoryComboBox;
+                var txtNewMainCategory = (TextBox)categoryControls.NewMainCategoryTextBox;
+                var tbNewCategory = (ToggleButton)categoryControls.NewCategoryToggle;
+                var txtSubCategory = (TextBox)categoryControls.SubCategoryTextBox;
+
+                // 验证一级分类
+                if (tbNewCategory.IsChecked == true)
+                {
+                    if (string.IsNullOrWhiteSpace(txtNewMainCategory.Text))
+                    {
+                        ShowValidationError(args, infoBar, "请填写新增一级分类。");
+                        return;
+                    }
+                }
+                else if (cbMainCategory.SelectedItem == null)
+                {
+                    ShowValidationError(args, infoBar, "请选择一级分类。");
+                    return;
+                }
+
+                // 验证二级分类
+                if (string.IsNullOrWhiteSpace(txtSubCategory.Text))
+                {
+                    ShowValidationError(args, infoBar, "请填写新增二级分类。");
+                    return;
+                }
+
+                // 构造参数
+                var mainCategory = tbNewCategory.IsChecked == true
+                    ? txtNewMainCategory.Text
+                    : ((FormulationCategory)cbMainCategory.SelectedItem)?.Name;
+                var subCategory = txtSubCategory.Text;
+                commandParam = Tuple.Create(mainCategory, subCategory);
+            }
+            else
+            {
+                // 获取方剂面板中的控件
+                dynamic formulationControls = formulationPanel.Tag;
+                var cbCategoryForFormulation = (ComboBox)formulationControls.CategoryComboBox;
+                var cbSubCategoryForFormulation = (ComboBox)formulationControls.SubCategoryComboBox;
+                var txtFormulationName = (TextBox)formulationControls.FormulationNameTextBox;
+
+                // 验证输入
+                if (cbCategoryForFormulation.SelectedItem == null)
+                {
+                    ShowValidationError(args, infoBar, "请选择分类。");
+                    return;
+                }
+
+                if (cbSubCategoryForFormulation.SelectedItem == null)
+                {
+                    ShowValidationError(args, infoBar, "请选择二级分类。");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtFormulationName.Text))
+                {
+                    ShowValidationError(args, infoBar, "请填写方剂名称。");
+                    return;
+                }
+
+                // 构造参数
+                var categoryId = ((FormulationCategory)cbSubCategoryForFormulation.SelectedItem).Id;
+                var formulationName = txtFormulationName.Text;
+                commandParam = Tuple.Create(categoryId, formulationName);
+            }
+
+            // 调用命令
+            if (ViewModel.InsertCategoryAndFormulationCommand.CanExecute(commandParam))
+            {
+                ViewModel.InsertCategoryAndFormulationCommand.Execute(commandParam);
+            }
+
+            // 如果是方剂模式，选中新增的方剂
+            if (commandParam is (int, string name))
+            {
+                await SelectFormulation(name);
+            }
+        }
+        catch (Exception ex)
+        {
+            HandleException(ex, "新增分类或方剂");
+        }
+    }
+
+    /// <summary>
+    /// 显示验证错误
+    /// </summary>
+    private void ShowValidationError(ContentDialogButtonClickEventArgs args, InfoBar infoBar, string message)
+    {
+        args.Cancel = true;
+        infoBar.IsOpen = true;
+        infoBar.Message = message;
+    }
+
+    #endregion
+
+    #region 数据编辑
+
+    private void DataGrid_CellEditEnding(object? sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (e.Row.DataContext is not FormulationComposition composition) return;
+        var propertyName = e.Column?.Tag?.ToString();
+        if (string.IsNullOrEmpty(propertyName)) return;
+
+        var updateCommand = composition.UpdateFormulationCompositionCommand;
+        if (updateCommand.CanExecute(propertyName))
+        {
+            updateCommand.Execute(propertyName);
+        }
+    }
+
+    #endregion
+
+    #region 异常处理
+
+    /// <summary>
+    /// 统一处理异常
+    /// </summary>
+    private void HandleException(Exception ex, string operation)
+    {
+        Logger.Error($"{operation}时出错：{ex.Message}", ex);
+        Debug.WriteLine(ex);
+        // 可以考虑添加用户提示逻辑
+    }
+
+    #endregion
 }
