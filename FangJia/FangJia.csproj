@@ -56,6 +56,7 @@
 		<None Remove="Pages\LogsPage.xaml" />
 		<None Remove="Pages\SettingsPage.xaml" />
 		<None Remove="Style\ColorResouses.xaml" />
+		<None Remove="Style\DataGridStyles.xaml" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Include="Assets\SplashScreen.scale-200.png" />
@@ -96,7 +97,9 @@
 		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250129-preview2" />
+		<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
 		<PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
+		<PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.1.25081.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.0-preview.1.25081.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0-preview.1.25080.5" />
@@ -124,6 +127,11 @@
 		<EmbeddedResource Update="Properties\Resource.resx">
 			<Generator>ResXFileCodeGenerator</Generator>
 		</EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Style\DataGridStyles.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 	<ItemGroup>
 		<Page Update="Pages\LogsPage.xaml">
@@ -192,7 +200,7 @@
 	<PropertyGroup>
 		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
 		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">True</PublishTrimmed>
+		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
 		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
 		<DefaultLanguage>zh-cn</DefaultLanguage>
 		<PackageCertificateThumbprint>1E760F9099FF5CB255FC1222D5927825309EF504</PackageCertificateThumbprint>
@@ -205,7 +213,7 @@
 		<AppxBundle>Never</AppxBundle>
 		<AppInstallerUri>C:\Users\zzy94\source\repos\FangJia%28pakeged%29\FangJia\bin\x64\Debug\net9.0-windows10.0.22000.0\win-x64\AppPackages\</AppInstallerUri>
 		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-		<PublishAot>True</PublishAot>
+		<PublishAot>False</PublishAot>
 		<ApplicationIcon>Assets\StoreLogo.ico</ApplicationIcon>
 		<UserSecretsId>acd2a293-3a32-4544-a133-6d5a59f0b4e3</UserSecretsId>
 		<NuGetAudit>True</NuGetAudit>

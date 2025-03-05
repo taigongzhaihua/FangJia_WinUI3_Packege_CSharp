@@ -35,7 +35,7 @@ public partial class Formulation : ObservableObject
     public int Id { get; set; } // 方剂ID
     public string? Name { get; set; } // 方剂名称
     public int CategoryId { get; set; } // 分类ID（外键）
-    public ObservableCollection<FormulationComposition>? Compositions { get; set; } = []; // 组成
+    [ObservableProperty] public partial ObservableCollection<FormulationComposition>? Compositions { get; set; } = []; // 组成
     public string? Usage { get; set; } // 用法
     public string? Effect { get; set; } // 功效
     public string? Indication { get; set; } // 适应症

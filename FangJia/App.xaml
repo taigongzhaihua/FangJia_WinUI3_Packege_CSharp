@@ -9,7 +9,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- 其他合并的字典在这里 -->
-                <ResourceDictionary Source="Style/ColorResouses.xaml"></ResourceDictionary>
+                <ResourceDictionary Source="Style/ColorResouses.xaml"/>
+                <ResourceDictionary Source="Style/DataGridStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <ResourceDictionary.ThemeDictionaries>

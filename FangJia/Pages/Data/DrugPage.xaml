@@ -10,6 +10,7 @@
     xmlns:winUi="using:CommunityToolkit.WinUI"
     xmlns:converters="using:FangJia.Converters"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
+    xmlns:control="using:TGZH.Control"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
 
@@ -191,6 +192,41 @@
                                 <NavigationThemeTransition />
                             </TransitionCollection>
                         </ScrollViewer.Transitions>
+
+                        <Grid Padding="0,0,0,30"
+                              MaxWidth="760" MinWidth="525">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" MaxWidth="380" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal"
+                                        Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                        Margin="0,20,0,30"
+                                        HorizontalAlignment="Stretch">
+                                <control:EditableTextBlock
+                                    Text="{x:Bind ViewModel.SelectedDrug.Name,Mode=TwoWay,FallbackValue='九转金丹'}"
+                                    FontSize="26" FontWeight="SemiBold"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Padding="8,6,10,12" Margin="0" />
+                                <control:EditableTextBlock IsMultiLine="False" InteractionMode="Button"
+                                                           VerticalAlignment="Bottom"
+                                                           Padding="8,6,10,12" Margin="0"
+                                                           Text="{x:Bind ViewModel.SelectedDrug.Category,Mode=TwoWay,FallbackValue='《太上老君炼丹录》'}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel></Grid>
                     </ScrollViewer>
                 </Grid>
             </SplitView.Content>

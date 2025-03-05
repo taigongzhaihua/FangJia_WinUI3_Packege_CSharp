@@ -7,14 +7,13 @@
 // FangJia 仅做学习交流使用
 // 转载请注明出处
 //------------------------------------------------------------------------
-using System;
-using System.IO;
+using FangJia.Helpers;
 
 namespace FangJia.DataAccess;
 
 public class DrugManager
 {
-    private static readonly string DatabasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data.db");
+    private static readonly string DatabasePath = AppHelper.GetFilePath("Data.db");
     private readonly string _connectionString = $"Data Source={DatabasePath};";
 
 }
