@@ -21,7 +21,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Windows.Storage;
-using WinRT;
+using TGZH.Control;
 
 
 namespace FangJia.Helpers;
@@ -95,7 +95,7 @@ public static class LogHelper
         {
             var config = new LoggingConfiguration();
 #if DEBUG
-                        // 日志格式(layout)，与 XML 配置保持一致
+            // 日志格式(layout)，与 XML 配置保持一致
             const string layout =
                 "[${longdate}] [${level:uppercase=true}] ${logger}\t${message}\t${exception}";
             const string stacktrace = "${stacktrace}";
@@ -285,24 +285,5 @@ public static class LogHelper
     public static Logger GetLogger(string? className)
     {
         return LogManager.GetLogger(className);
-    }
-}
-
-[GeneratedBindableCustomProperty]
-public partial class LogItem
-{
-    public DateTime TimestampUtc { get; set; }
-    public string? Application { get; set; }
-    public string? Level { get; set; }
-    public string? Message { get; set; }
-    public string? Exception { get; set; }
-    public string? Logger { get; set; }
-    public int EventId { get; set; }
-
-    public override string ToString()
-    {
-        var l = $"[{TimestampUtc:yyyy-MM-dd HH:mm:ss.fff}] [{Level}] {Logger}\t：{Message}";
-        if (!string.IsNullOrWhiteSpace(Exception)) l += $" - {Exception}";
-        return l;
     }
 }

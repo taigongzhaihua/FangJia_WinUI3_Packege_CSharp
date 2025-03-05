@@ -5,6 +5,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="ms-appx:///TGZH.Control/Themes/MultiSelectComboBox.xaml" />
         <ResourceDictionary Source="ms-appx:///TGZH.Control/Themes/EditableTextBlock.xaml"/>
+        <ResourceDictionary Source="ms-appx:///TGZH.Control/Themes/LogHighlightControl.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

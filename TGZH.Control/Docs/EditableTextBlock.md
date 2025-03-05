@@ -77,6 +77,110 @@
 - **类型**：`EditableTextBlockInteractionMode` 枚举
 - **说明**：指示控件的交互模式，指定进入编辑状态的方式。可选值包括 `DoubleClick`（双击文本区域进入编辑，失焦后自动保存，按`Esc`键取消）和 `Button`（通过按钮进入编辑、保存及取消）。
 
+### 4.7 Header
+- **类型**：`object`
+- **说明**：用于显示在控件上方的标题内容，可为文本、图标等。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock Header="Title" Text="{Binding MyText}" />`
+
+### 4.8 HeaderTemplate
+- **类型**：`DataTemplate`
+- **说明**：用于自定义标题的显示样式，可包含文本、图标等。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock Header="Title" HeaderTemplate="{StaticResource MyHeaderTemplate}" Text="{Binding MyText}" />`
+
+### 4.9 HeaderVisibility
+- **类型**：`Visibility`
+- **说明**：指示标题的可见性，可设置为 `Visible`、`Collapsed` 或 `Hidden`。
+- **默认值**：`Visible`
+- **示例**：`<local:EditableTextBlock Header="Title" HeaderVisibility="Collapsed" Text="{Binding MyText}" />`
+
+### 4.10 EditButtonStyle
+- **类型**：`Style`
+- **说明**：用于自定义编辑按钮的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditButtonStyle="{StaticResource MyEditButtonStyle}" Text="{Binding MyText}" />`
+
+### 4.11 SaveButtonStyle
+- **类型**：`Style`
+- **说明**：用于自定义保存按钮的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock SaveButtonStyle="{StaticResource MySaveButtonStyle}" Text="{Binding MyText}" />`
+
+### 4.12 CancelButtonStyle
+- **类型**：`Style`
+- **说明**：用于自定义取消按钮的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock CancelButtonStyle="{StaticResource MyCancelButtonStyle}" Text="{Binding MyText}" />`
+
+### 4.13 ErrorTextBlockStyle
+- **类型**：`Style`
+- **说明**：用于自定义错误提示文本块的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock ErrorTextBlockStyle="{StaticResource MyErrorTextBlockStyle}" Text="{Binding MyText}" />`
+
+### 4.14 DisplayTextBlockStyle
+- **类型**：`Style`
+- **说明**：用于自定义显示文本块的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock DisplayTextBlockStyle="{StaticResource MyDisplayTextBlockStyle}" Text="{Binding MyText}" />`
+
+### 4.15 EditTextBoxStyle
+- **类型**：`Style`
+- **说明**：用于自定义编辑文本框的样式。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditTextBoxStyle="{StaticResource MyEditTextBoxStyle}" Text="{Binding MyText}" />`
+
+### 4.16 SaveCommand
+- **类型**：`ICommand`
+- **说明**：用于绑定保存操作的命令，当执行命令时，将触发保存操作。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock SaveCommand="{Binding SaveCommand}" Text="{Binding MyText}" />`
+
+### 4.17 CancelCommand
+- **类型**：`ICommand`
+- **说明**：用于绑定取消操作的命令，当执行命令时，将触发取消操作。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock CancelCommand="{Binding CancelCommand}" Text="{Binding MyText}" />`
+
+### 4.18 EditingStarted
+- **类型**：`RoutedEventHandler`
+- **说明**：在进入编辑状态时触发的事件。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditingStarted="OnEditingStarted" Text="{Binding MyText}" />`
+
+### 4.19 EditingCompleted
+- **类型**：`RoutedEventHandler`
+- **说明**：在编辑完成（保存或取消）时触发的事件。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditingCompleted="OnEditingCompleted" Text="{Binding MyText}" />`
+
+### 4.20 EditCommand
+- **类型**：`ICommand`
+- **说明**：用于绑���进入编辑状态的命令，当执行命令时，将进入编辑状态。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditCommand="{Binding EditCommand}" Text="{Binding MyText}" />`
+
+### 4.21 SaveCommandParameter
+- **类型**：`object`
+- **说明**：保存操作的命令参数。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock SaveCommand="{Binding SaveCommand}" SaveCommandParameter="{Binding SaveCommandParameter}" Text="{Binding MyText}" />`
+
+### 4.22 CancelCommandParameter
+- **类型**：`object`
+- **说明**：取消操作的命令参数。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock CancelCommand="{Binding CancelCommand}" CancelCommandParameter="{Binding CancelCommandParameter}" Text="{Binding MyText}" />`
+
+### 4.23 EditCommandParameter
+- **类型**：`object`
+- **说明**：进入编辑状态的命令参数。
+- **默认值**：`null`
+- **示例**：`<local:EditableTextBlock EditCommand="{Binding EditCommand}" EditCommandParameter="{Binding EditCommandParameter}" Text="{Binding MyText}" />`
+
+
+
 ---
 
 ## 5. 事件和内部逻辑

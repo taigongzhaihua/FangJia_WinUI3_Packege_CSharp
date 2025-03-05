@@ -1,655 +1,795 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using Windows.System;
 
-// ICommand
-
-namespace TGZH.Control;
-
-/// <summary>
-/// 定义交互模式：按钮模式 或 双击模式
-/// </summary>
-public enum EditableTextBlockInteractionMode
+namespace TGZH.Control
 {
-    Button,
-    DoubleClick
-}
-
-public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
-{
-    #region 依赖属性
-
-    // 显示或编辑的文本内容
-    public static readonly DependencyProperty TextProperty =
-        DependencyProperty.Register(nameof(Text), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty, OnTextChanged));
-
-    private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        var control = d as EditableTextBlock;
-        if (control == null) return;
-        if (control._displayTextBlock == null) return;
-        control._displayTextBlock.Text = control.Text;
-        control._editTextBox.Text = control.Text;
-    }
-
-    public string Text
-    {
-        get => (string)GetValue(TextProperty);
-        set => SetValue(TextProperty, value);
-    }
-
-    // 编辑命令
-    public static readonly DependencyProperty EditCommandProperty =
-        DependencyProperty.Register(nameof(EditCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-    public ICommand EditCommand
-    {
-        get => (ICommand)GetValue(EditCommandProperty);
-        set => SetValue(EditCommandProperty, value);
-    }
-
-    // 保存命令
-    public static readonly DependencyProperty SaveCommandProperty =
-        DependencyProperty.Register(nameof(SaveCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-    public ICommand SaveCommand
-    {
-        get => (ICommand)GetValue(SaveCommandProperty);
-        set => SetValue(SaveCommandProperty, value);
-    }
-
-    // 定义 CommandParameter 依赖属性
-    public static readonly DependencyProperty SaveCommandParameterProperty =
-        DependencyProperty.Register(nameof(SaveCommandParameter), typeof(object), typeof(EditableTextBlock), new PropertyMetadata(null));
-
-    public object SaveCommandParameter
-    {
-        get => GetValue(SaveCommandParameterProperty);
-        set => SetValue(SaveCommandParameterProperty, value);
-    }
-
-    // 取消命令
-    public static readonly DependencyProperty CancelCommandProperty =
-        DependencyProperty.Register(nameof(CancelCommand), typeof(ICommand), typeof(EditableTextBlock), new PropertyMetadata(null));
-    public ICommand CancelCommand
-    {
-        get => (ICommand)GetValue(CancelCommandProperty);
-        set => SetValue(CancelCommandProperty, value);
-    }
-
-    // 是否必须输入（验证用）
-    public static readonly DependencyProperty IsRequiredProperty =
-        DependencyProperty.Register(nameof(IsRequired), typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(false));
-    public bool IsRequired
-    {
-        get => (bool)GetValue(IsRequiredProperty);
-        set => SetValue(IsRequiredProperty, value);
-    }
-
-    // 错误提示信息（验证失败时显示）
-    public static readonly DependencyProperty ErrorMessageProperty =
-        DependencyProperty.Register(nameof(ErrorMessage), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
-    public string ErrorMessage
-    {
-        get => (string)GetValue(ErrorMessageProperty);
-        set => SetValue(ErrorMessageProperty, value);
-    }
-
-    // 是否启用多行编辑
-    public static readonly DependencyProperty IsMultiLineProperty =
-        DependencyProperty.Register(nameof(IsMultiLine), typeof(bool), typeof(EditableTextBlock), new PropertyMetadata(false));
-    public bool IsMultiLine
-    {
-        get => (bool)GetValue(IsMultiLineProperty);
-        set => SetValue(IsMultiLineProperty, value);
-    }
-
-    // 占位符文本
-    public static readonly DependencyProperty PlaceholderProperty =
-        DependencyProperty.Register(nameof(Placeholder), typeof(string), typeof(EditableTextBlock), new PropertyMetadata(string.Empty));
-    public string Placeholder
-    {
-        get => (string)GetValue(PlaceholderProperty);
-        set => SetValue(PlaceholderProperty, value);
-    }
-
-    // 交互模式：按钮模式或双击模式，默认按钮模式
-    public static readonly DependencyProperty InteractionModeProperty =
-        DependencyProperty.Register(nameof(InteractionMode), typeof(EditableTextBlockInteractionMode), typeof(EditableTextBlock),
-            new PropertyMetadata(EditableTextBlockInteractionMode.Button, OnInteractionModeChanged));
-    public EditableTextBlockInteractionMode InteractionMode
-    {
-        get => (EditableTextBlockInteractionMode)GetValue(InteractionModeProperty);
-        set => SetValue(InteractionModeProperty, value);
-    }
-    private static void OnInteractionModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        var control = d as EditableTextBlock;
-        if (control == null) return;
-        switch (control.InteractionMode)
-        {
-            // 按钮模式下使用鼠标进入/离开切换视觉状态
-            case EditableTextBlockInteractionMode.Button:
-                control.PointerEntered -= control.EditableTextBlock_PointerEntered;
-                control.PointerExited -= control.EditableTextBlock_PointerExited;
-                control.DoubleTapped -= control.EditableTextBlock_DoubleTapped;
-                control.PointerEntered += control.EditableTextBlock_PointerEntered;
-                control.PointerExited += control.EditableTextBlock_PointerExited;
-                break;
-            // 双击模式下使用双击切换编辑状态
-            case EditableTextBlockInteractionMode.DoubleClick:
-                control.PointerEntered -= control.EditableTextBlock_PointerEntered;
-                control.PointerExited -= control.EditableTextBlock_PointerExited;
-                control.DoubleTapped -= control.EditableTextBlock_DoubleTapped;
-                control.DoubleTapped += control.EditableTextBlock_DoubleTapped;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(d));
-        }
-    }
-
     /// <summary>
-    /// 控件的标题或说明内容，可以是字符串或者任意 UI 元素。
+    /// 可编辑文本块控件，支持只读显示和编辑两种状态
     /// </summary>
-    public static readonly DependencyProperty HeaderProperty =
-        DependencyProperty.Register(
-            nameof(Header),
-            typeof(object),
-            typeof(EditableTextBlock),
-            new PropertyMetadata(null, OnHeaderChanged));
-
-    private static void OnHeaderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    [TemplatePart(Name = "PART_DisplayContainer", Type = typeof(Grid))]
+    [TemplatePart(Name = "PART_DisplayTextBlock", Type = typeof(TextBlock))]
+    [TemplatePart(Name = "PART_EditTextBox", Type = typeof(TextBox))]
+    [TemplatePart(Name = "PART_EditButton", Type = typeof(Button))]
+    [TemplatePart(Name = "PART_SaveButton", Type = typeof(Button))]
+    [TemplatePart(Name = "PART_CancelButton", Type = typeof(Button))]
+    [TemplatePart(Name = "PART_ErrorTextBlock", Type = typeof(TextBlock))]
+    public partial class EditableTextBlock : Microsoft.UI.Xaml.Controls.Control
     {
-        var control = d as EditableTextBlock;
-        if (control == null) return;
-        if (control.Header == null)
+        #region 私有成员
+
+        private Grid _displayContainer;
+        private TextBlock _displayTextBlock;
+        private TextBox _editTextBox;
+        private Button _editButton;
+        private Button _saveButton;
+        private Button _cancelButton;
+        private TextBlock _errorTextBlock;
+        private string _originalText;
+        private bool _isInEditMode;
+        private bool _templateApplied;
+
+        #endregion
+
+        #region 构造函数
+
+        /// <summary>
+        /// 初始化 EditableTextBlock 的新实例
+        /// </summary>
+        public EditableTextBlock()
         {
-            control._headerContentPresenter.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    public object Header
-    {
-        get => GetValue(HeaderProperty);
-        set => SetValue(HeaderProperty, value);
-    }
-
-    #endregion
-
-    #region 模板部件名称
-
-    private const string PartDisplayTextBlock = "PART_DisplayTextBlock";
-    private const string PartEditTextBox = "PART_EditTextBox";
-    private const string PartEditButton = "PART_EditButton";
-    private const string PartSaveButton = "PART_SaveButton";
-    private const string PartCancelButton = "PART_CancelButton";
-    private const string PartErrorTextBlock = "PART_ErrorTextBlock";
-    private const string PartHeaderContentPresenter = "PART_HeaderContentPresenter";
-
-    #endregion
-
-    #region 模板部件引用
-
-    private TextBlock _displayTextBlock;
-    private TextBox _editTextBox;
-    private Button _editButton;
-    private Button _saveButton;
-    private Button _cancelButton;
-    private TextBlock _errorTextBlock;
-    private ContentPresenter _headerContentPresenter;
-
-    // 标识当前是否处于编辑状态
-    private bool _isEditing;
-
-    #endregion
-
-    #region 编辑状态事件
-
-    public event RoutedEventHandler EditingStarted;
-    public event RoutedEventHandler EditingCompleted;
-
-    #endregion
-
-    public EditableTextBlock()
-    {
-        DefaultStyleKey = typeof(EditableTextBlock);
-
-        switch (InteractionMode)
-        {
-            // 按钮模式下使用鼠标进入/离开切换视觉状态
-            case EditableTextBlockInteractionMode.Button:
-                PointerEntered += EditableTextBlock_PointerEntered;
-                PointerExited += EditableTextBlock_PointerExited;
-                break;
-            // 双击模式下使用双击切换编辑状态
-            case EditableTextBlockInteractionMode.DoubleClick:
-                DoubleTapped += EditableTextBlock_DoubleTapped;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-    }
-
-    #region 视觉状态切换（鼠标事件）
-
-    private void EditableTextBlock_PointerEntered(object sender, PointerRoutedEventArgs e)
-    {
-        // 仅在按钮模式下处理
-        if (InteractionMode == EditableTextBlockInteractionMode.Button)
-        {
-            VisualStateManager.GoToState(this, !_isEditing ? "PointerOverDisplay" : "PointerOverEdit", true);
-        }
-    }
-
-    private void EditableTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
-    {
-        if (InteractionMode == EditableTextBlockInteractionMode.Button)
-        {
-            VisualStateManager.GoToState(this, !_isEditing ? "DisplayState" : "EditState", true);
-        }
-    }
-
-    // 双击模式下，双击进入编辑状态
-    private void EditableTextBlock_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        if (InteractionMode == EditableTextBlockInteractionMode.DoubleClick)
-        {
-            EnterEditMode();
-        }
-    }
-    #endregion
-
-    #region 模板加载
-
-    protected override void OnApplyTemplate()
-    {
-        base.OnApplyTemplate();
-
-        // 解除旧模板的事件绑定
-        if (_editButton != null)
-            _editButton.Click -= EditButton_Click;
-        if (_saveButton != null)
-            _saveButton.Click -= SaveButton_Click;
-        if (_cancelButton != null)
-            _cancelButton.Click -= CancelButton_Click;
-        if (_editTextBox != null)
-            _editTextBox.KeyDown -= EditTextBox_KeyDown;
-        if (_editTextBox != null)
-            _editTextBox.LostFocus -= EditTextBox_LostFocus;
-
-        // 获取模板部件引用
-        _displayTextBlock = GetTemplateChild(PartDisplayTextBlock) as TextBlock;
-        _editTextBox = GetTemplateChild(PartEditTextBox) as TextBox;
-        _editButton = GetTemplateChild(PartEditButton) as Button;
-        _saveButton = GetTemplateChild(PartSaveButton) as Button;
-        _cancelButton = GetTemplateChild(PartCancelButton) as Button;
-        _errorTextBlock = GetTemplateChild(PartErrorTextBlock) as TextBlock;
-        _headerContentPresenter = GetTemplateChild(PartHeaderContentPresenter) as ContentPresenter;
-
-        if (_headerContentPresenter != null)
-        {
-            _headerContentPresenter.Visibility = Header == null ? Visibility.Collapsed : Visibility.Visible;
+            DefaultStyleKey = typeof(EditableTextBlock);
+            Loaded += EditableTextBlock_Loaded;
         }
 
-        // 同步显示文本与占位符、换行等属性
-        if (_displayTextBlock != null)
-            _displayTextBlock.Text = Text;
-        if (_editTextBox != null)
+        #endregion
+
+
+        #region 依赖属性
+
+        /// <summary>
+        /// 定义 Text 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty TextProperty =
+            DependencyProperty.Register(nameof(Text), typeof(string), typeof(EditableTextBlock),
+                new PropertyMetadata(string.Empty));
+
+        /// <summary>
+        /// 获取或设置控件的文本内容
+        /// </summary>
+        public string Text
         {
-            _editTextBox.Text = Text;
-            _editTextBox.PlaceholderText = Placeholder;
-            _editTextBox.KeyDown += EditTextBox_KeyDown;
-        }
-        if (_errorTextBlock != null)
-        {
-            _errorTextBlock.Text = ErrorMessage;
+            get => (string)GetValue(TextProperty);
+            set => SetValue(TextProperty, value);
         }
 
-        // 按钮事件仅在按钮模式下有效
-        if (InteractionMode == EditableTextBlockInteractionMode.Button)
+        /// <summary>
+        /// 定义 IsRequired 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty IsRequiredProperty =
+            DependencyProperty.Register(nameof(IsRequired), typeof(bool), typeof(EditableTextBlock),
+                new PropertyMetadata(false));
+
+        /// <summary>
+        /// 获取或设置一个值，该值指示文本是否为必填项
+        /// </summary>
+        public bool IsRequired
         {
+            get => (bool)GetValue(IsRequiredProperty);
+            set => SetValue(IsRequiredProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 ErrorMessage 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty ErrorMessageProperty =
+            DependencyProperty.Register(nameof(ErrorMessage), typeof(string), typeof(EditableTextBlock),
+                new PropertyMetadata("此字段为必填项。"));
+
+        /// <summary>
+        /// 获取或设置当输入验证失败时显示的错误提示信息
+        /// </summary>
+        public string ErrorMessage
+        {
+            get => (string)GetValue(ErrorMessageProperty);
+            set => SetValue(ErrorMessageProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 IsMultiLine 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty IsMultiLineProperty =
+            DependencyProperty.Register(nameof(IsMultiLine), typeof(bool), typeof(EditableTextBlock),
+                new PropertyMetadata(false, OnIsMultiLinePropertyChanged));
+
+        private static void OnIsMultiLinePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is EditableTextBlock control && control._editTextBox != null)
+            {
+                control.UpdateMultiLineSettings();
+            }
+        }
+
+        /// <summary>
+        /// 获取或设置一个值，该值指示编辑区域是否支持多行输入
+        /// </summary>
+        public bool IsMultiLine
+        {
+            get => (bool)GetValue(IsMultiLineProperty);
+            set => SetValue(IsMultiLineProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 Placeholder 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty PlaceholderProperty =
+            DependencyProperty.Register(nameof(Placeholder), typeof(string), typeof(EditableTextBlock),
+                new PropertyMetadata(string.Empty, OnPlaceholderPropertyChanged));
+
+        private static void OnPlaceholderPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is EditableTextBlock control && control._editTextBox != null)
+            {
+                control._editTextBox.PlaceholderText = (string)e.NewValue;
+            }
+        }
+
+        /// <summary>
+        /// 获取或设置在编辑状态下显示的占位符文本
+        /// </summary>
+        public string Placeholder
+        {
+            get => (string)GetValue(PlaceholderProperty);
+            set => SetValue(PlaceholderProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 InteractionMode 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty InteractionModeProperty =
+            DependencyProperty.Register(nameof(InteractionMode), typeof(EditableTextBlockInteractionMode),
+                typeof(EditableTextBlock), new PropertyMetadata(EditableTextBlockInteractionMode.Button,
+                    OnInteractionModePropertyChanged));
+
+        private static void OnInteractionModePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is EditableTextBlock { _templateApplied: true } control)
+            {
+                control.UpdateInteractionMode();
+            }
+        }
+
+        /// <summary>
+        /// 获取或设置控件的交互模式
+        /// </summary>
+        public EditableTextBlockInteractionMode InteractionMode
+        {
+            get => (EditableTextBlockInteractionMode)GetValue(InteractionModeProperty);
+            set => SetValue(InteractionModeProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 Header 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty HeaderProperty =
+            DependencyProperty.Register(nameof(Header), typeof(object), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置控件的标题内容
+        /// </summary>
+        public object Header
+        {
+            get => GetValue(HeaderProperty);
+            set => SetValue(HeaderProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 HeaderTemplate 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty HeaderTemplateProperty =
+            DependencyProperty.Register(nameof(HeaderTemplate), typeof(DataTemplate), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置标题的数据模板
+        /// </summary>
+        public DataTemplate HeaderTemplate
+        {
+            get => (DataTemplate)GetValue(HeaderTemplateProperty);
+            set => SetValue(HeaderTemplateProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 HeaderVisibility 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty HeaderVisibilityProperty =
+            DependencyProperty.Register(nameof(HeaderVisibility), typeof(Visibility), typeof(EditableTextBlock),
+                new PropertyMetadata(Visibility.Visible));
+
+        /// <summary>
+        /// 获取或设置标题的可见性
+        /// </summary>
+        public Visibility HeaderVisibility
+        {
+            get => (Visibility)GetValue(HeaderVisibilityProperty);
+            set => SetValue(HeaderVisibilityProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 EditButtonStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty EditButtonStyleProperty =
+            DependencyProperty.Register(nameof(EditButtonStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置编辑按钮的样式
+        /// </summary>
+        public Style EditButtonStyle
+        {
+            get => (Style)GetValue(EditButtonStyleProperty);
+            set => SetValue(EditButtonStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 SaveButtonStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty SaveButtonStyleProperty =
+            DependencyProperty.Register(nameof(SaveButtonStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置保存按钮的样式
+        /// </summary>
+        public Style SaveButtonStyle
+        {
+            get => (Style)GetValue(SaveButtonStyleProperty);
+            set => SetValue(SaveButtonStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 CancelButtonStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty CancelButtonStyleProperty =
+            DependencyProperty.Register(nameof(CancelButtonStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置取消按钮的样式
+        /// </summary>
+        public Style CancelButtonStyle
+        {
+            get => (Style)GetValue(CancelButtonStyleProperty);
+            set => SetValue(CancelButtonStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 ErrorTextBlockStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty ErrorTextBlockStyleProperty =
+            DependencyProperty.Register(nameof(ErrorTextBlockStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置错误提示文本块的样式
+        /// </summary>
+        public Style ErrorTextBlockStyle
+        {
+            get => (Style)GetValue(ErrorTextBlockStyleProperty);
+            set => SetValue(ErrorTextBlockStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 DisplayTextBlockStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty DisplayTextBlockStyleProperty =
+            DependencyProperty.Register(nameof(DisplayTextBlockStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置显示文本块的样式
+        /// </summary>
+        public Style DisplayTextBlockStyle
+        {
+            get => (Style)GetValue(DisplayTextBlockStyleProperty);
+            set => SetValue(DisplayTextBlockStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 EditTextBoxStyle 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty EditTextBoxStyleProperty =
+            DependencyProperty.Register(nameof(EditTextBoxStyle), typeof(Style), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置编辑文本框的样式
+        /// </summary>
+        public Style EditTextBoxStyle
+        {
+            get => (Style)GetValue(EditTextBoxStyleProperty);
+            set => SetValue(EditTextBoxStyleProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 SaveCommand 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty SaveCommandProperty =
+            DependencyProperty.Register(nameof(SaveCommand), typeof(ICommand), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置保存操作的命令
+        /// </summary>
+        public ICommand SaveCommand
+        {
+            get => (ICommand)GetValue(SaveCommandProperty);
+            set => SetValue(SaveCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 CancelCommand 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty CancelCommandProperty =
+            DependencyProperty.Register(nameof(CancelCommand), typeof(ICommand), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置取消操作的命令
+        /// </summary>
+        public ICommand CancelCommand
+        {
+            get => (ICommand)GetValue(CancelCommandProperty);
+            set => SetValue(CancelCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 EditCommand 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty EditCommandProperty =
+            DependencyProperty.Register(nameof(EditCommand), typeof(ICommand), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置进入编辑状态的命令
+        /// </summary>
+        public ICommand EditCommand
+        {
+            get => (ICommand)GetValue(EditCommandProperty);
+            set => SetValue(EditCommandProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 SaveCommandParameter 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty SaveCommandParameterProperty =
+            DependencyProperty.Register(nameof(SaveCommandParameter), typeof(object), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置保存命令的参数
+        /// </summary>
+        public object SaveCommandParameter
+        {
+            get => GetValue(SaveCommandParameterProperty);
+            set => SetValue(SaveCommandParameterProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 CancelCommandParameter 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty CancelCommandParameterProperty =
+            DependencyProperty.Register(nameof(CancelCommandParameter), typeof(object), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置取消命令的参数
+        /// </summary>
+        public object CancelCommandParameter
+        {
+            get => GetValue(CancelCommandParameterProperty);
+            set => SetValue(CancelCommandParameterProperty, value);
+        }
+
+        /// <summary>
+        /// 定义 EditCommandParameter 依赖属性
+        /// </summary>
+        public static readonly DependencyProperty EditCommandParameterProperty =
+            DependencyProperty.Register(nameof(EditCommandParameter), typeof(object), typeof(EditableTextBlock),
+                new PropertyMetadata(null));
+
+        /// <summary>
+        /// 获取或设置编辑命令的参数
+        /// </summary>
+        public object EditCommandParameter
+        {
+            get => GetValue(EditCommandParameterProperty);
+            set => SetValue(EditCommandParameterProperty, value);
+        }
+
+        #endregion
+
+        #region 事件
+
+        /// <summary>
+        /// 编辑开始事件
+        /// </summary>
+        public event RoutedEventHandler EditingStarted;
+
+        /// <summary>
+        /// 编辑完成事件
+        /// </summary>
+        public event RoutedEventHandler EditingCompleted;
+
+        #endregion
+
+        #region 重写方法
+
+        /// <summary>
+        /// 当应用模板时调用
+        /// </summary>
+        protected override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+
+            // 清除之前的事件处理程序
+            UnregisterEvents();
+
+            // 获取模板部件
+            _displayContainer = GetTemplateChild("PART_DisplayContainer") as Grid;
+            _displayTextBlock = GetTemplateChild("PART_DisplayTextBlock") as TextBlock;
+            _editTextBox = GetTemplateChild("PART_EditTextBox") as TextBox;
+            _editButton = GetTemplateChild("PART_EditButton") as Button;
+            _saveButton = GetTemplateChild("PART_SaveButton") as Button;
+            _cancelButton = GetTemplateChild("PART_CancelButton") as Button;
+            _errorTextBlock = GetTemplateChild("PART_ErrorTextBlock") as TextBlock;
+
+            // 确保找到了所有必要的元素
+            if (_editButton == null)
+            {
+                Debug.WriteLine("警告: 无法找到编辑按钮 PART_EditButton");
+            }
+
+            // 注册事件
+            RegisterEvents();
+
+            // 初始化控件状态
+            UpdateMultiLineSettings();
+            UpdateInteractionMode();
+            VisualStateManager.GoToState(this, "ReadOnlyState", false);
+
+            _templateApplied = true;
+        }
+
+        #endregion
+
+        #region 私有方法
+
+        private void EditableTextBlock_Loaded(object sender, RoutedEventArgs e)
+        {
+            // 如果控件已经加载过模板，确保状态正确
+            if (!_templateApplied) return;
+            UpdateMultiLineSettings();
+            UpdateInteractionMode();
+        }
+
+        private void UpdateMultiLineSettings()
+        {
+            if (_editTextBox == null) return;
+
+            _editTextBox.AcceptsReturn = IsMultiLine;
+            _editTextBox.TextWrapping = IsMultiLine ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        }
+
+        private void UpdateInteractionMode()
+        {
+            if (_displayTextBlock == null) return;
+
+            // 根据交互模式设置事件处理
+            if (InteractionMode == EditableTextBlockInteractionMode.DoubleClick)
+            {
+                _displayTextBlock.DoubleTapped += DisplayTextBlock_DoubleTapped;
+                if (_editButton != null) _editButton.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                _displayTextBlock.DoubleTapped -= DisplayTextBlock_DoubleTapped;
+                if (_editButton != null) _editButton.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void RegisterEvents()
+        {
+            if (_displayTextBlock != null)
+            {
+                UpdateInteractionMode();
+            }
+
+            if (_displayContainer != null)
+            {
+                // 添加鼠标悬停事件处理到 DisplayContainer
+                _displayContainer.PointerEntered += DisplayContainer_PointerEntered;
+                _displayContainer.PointerExited += DisplayContainer_PointerExited;
+                EditingStarted += OnEditingStarted;
+            }
+
+            if (_editTextBox != null)
+            {
+                _editTextBox.LostFocus += EditTextBox_LostFocus;
+                _editTextBox.KeyDown += EditTextBox_KeyDown;
+                _editTextBox.PlaceholderText = Placeholder;
+            }
+
             if (_editButton != null)
+            {
+                // 先确保没有重复注册事件
+                _editButton.Click -= EditButton_Click;
                 _editButton.Click += EditButton_Click;
-            if (_saveButton != null)
-                _saveButton.Click += SaveButton_Click;
-            if (_cancelButton != null)
-                _cancelButton.Click += CancelButton_Click;
-        }
-        else  // 双击模式下隐藏所有按钮，并添加失焦事件
-        {
-            if (_editButton != null)
-                _editButton.Visibility = Visibility.Collapsed;
-            if (_saveButton != null)
-                _saveButton.Visibility = Visibility.Collapsed;
-            if (_cancelButton != null)
-                _cancelButton.Visibility = Visibility.Collapsed;
 
-            DoubleTapped -= EditableTextBlock_DoubleTapped;
-            DoubleTapped += EditableTextBlock_DoubleTapped;
+                // 为编辑按钮也添加鼠标事件
+                _editButton.PointerEntered += EditButton_PointerEntered;
+            }
+
+            if (_saveButton != null)
+            {
+                _saveButton.Click -= SaveButton_Click;
+                _saveButton.Click += SaveButton_Click;
+            }
+
+            if (_cancelButton != null)
+            {
+                _cancelButton.Click -= CancelButton_Click;
+                _cancelButton.Click += CancelButton_Click;
+            }
+        }
+
+        private void UnregisterEvents()
+        {
+            if (_displayTextBlock != null)
+            {
+                _displayTextBlock.DoubleTapped -= DisplayTextBlock_DoubleTapped;
+            }
+
+            if (_displayContainer != null)
+            {
+                _displayContainer.PointerEntered -= DisplayContainer_PointerEntered;
+                _displayContainer.PointerExited -= DisplayContainer_PointerExited;
+                EditingStarted -= OnEditingStarted;
+            }
 
             if (_editTextBox != null)
             {
                 _editTextBox.LostFocus -= EditTextBox_LostFocus;
-                _editTextBox.LostFocus += EditTextBox_LostFocus;
+                _editTextBox.KeyDown -= EditTextBox_KeyDown;
             }
-        }
 
-        // 初始进入默认验证状态
-        VisualStateManager.GoToState(this, "Valid", false);
-        UpdateVisualStates(false);
-    }
-
-    #endregion
-
-    #region 按钮与键盘事件处理
-
-    private void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        EnterEditMode();
-    }
-
-    private void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        SaveEdit();
-    }
-
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
-    {
-        CancelEdit();
-    }
-
-    // 键盘处理：Enter 保存，Escape 取消
-    private void EditTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        switch (e.Key)
-        {
-            case VirtualKey.Enter:
-                SaveEdit();
-                e.Handled = true;
-                break;
-            case VirtualKey.Escape:
-                CancelEdit();
-                e.Handled = true;
-                break;
-            case VirtualKey.None:
-            case VirtualKey.LeftButton:
-            case VirtualKey.RightButton:
-            case VirtualKey.Cancel:
-            case VirtualKey.MiddleButton:
-            case VirtualKey.XButton1:
-            case VirtualKey.XButton2:
-            case VirtualKey.Back:
-            case VirtualKey.Tab:
-            case VirtualKey.Clear:
-            case VirtualKey.Shift:
-            case VirtualKey.Control:
-            case VirtualKey.Menu:
-            case VirtualKey.Pause:
-            case VirtualKey.CapitalLock:
-            case VirtualKey.Kana:
-            case VirtualKey.Junja:
-            case VirtualKey.Final:
-            case VirtualKey.Hanja:
-            case VirtualKey.Convert:
-            case VirtualKey.NonConvert:
-            case VirtualKey.Accept:
-            case VirtualKey.ModeChange:
-            case VirtualKey.Space:
-            case VirtualKey.PageUp:
-            case VirtualKey.PageDown:
-            case VirtualKey.End:
-            case VirtualKey.Home:
-            case VirtualKey.Left:
-            case VirtualKey.Up:
-            case VirtualKey.Right:
-            case VirtualKey.Down:
-            case VirtualKey.Select:
-            case VirtualKey.Print:
-            case VirtualKey.Execute:
-            case VirtualKey.Snapshot:
-            case VirtualKey.Insert:
-            case VirtualKey.Delete:
-            case VirtualKey.Help:
-            case VirtualKey.Number0:
-            case VirtualKey.Number1:
-            case VirtualKey.Number2:
-            case VirtualKey.Number3:
-            case VirtualKey.Number4:
-            case VirtualKey.Number5:
-            case VirtualKey.Number6:
-            case VirtualKey.Number7:
-            case VirtualKey.Number8:
-            case VirtualKey.Number9:
-            case VirtualKey.A:
-            case VirtualKey.B:
-            case VirtualKey.C:
-            case VirtualKey.D:
-            case VirtualKey.E:
-            case VirtualKey.F:
-            case VirtualKey.G:
-            case VirtualKey.H:
-            case VirtualKey.I:
-            case VirtualKey.J:
-            case VirtualKey.K:
-            case VirtualKey.L:
-            case VirtualKey.M:
-            case VirtualKey.N:
-            case VirtualKey.O:
-            case VirtualKey.P:
-            case VirtualKey.Q:
-            case VirtualKey.R:
-            case VirtualKey.S:
-            case VirtualKey.T:
-            case VirtualKey.U:
-            case VirtualKey.V:
-            case VirtualKey.W:
-            case VirtualKey.X:
-            case VirtualKey.Y:
-            case VirtualKey.Z:
-            case VirtualKey.LeftWindows:
-            case VirtualKey.RightWindows:
-            case VirtualKey.Application:
-            case VirtualKey.Sleep:
-            case VirtualKey.NumberPad0:
-            case VirtualKey.NumberPad1:
-            case VirtualKey.NumberPad2:
-            case VirtualKey.NumberPad3:
-            case VirtualKey.NumberPad4:
-            case VirtualKey.NumberPad5:
-            case VirtualKey.NumberPad6:
-            case VirtualKey.NumberPad7:
-            case VirtualKey.NumberPad8:
-            case VirtualKey.NumberPad9:
-            case VirtualKey.Multiply:
-            case VirtualKey.Add:
-            case VirtualKey.Separator:
-            case VirtualKey.Subtract:
-            case VirtualKey.Decimal:
-            case VirtualKey.Divide:
-            case VirtualKey.F1:
-            case VirtualKey.F2:
-            case VirtualKey.F3:
-            case VirtualKey.F4:
-            case VirtualKey.F5:
-            case VirtualKey.F6:
-            case VirtualKey.F7:
-            case VirtualKey.F8:
-            case VirtualKey.F9:
-            case VirtualKey.F10:
-            case VirtualKey.F11:
-            case VirtualKey.F12:
-            case VirtualKey.F13:
-            case VirtualKey.F14:
-            case VirtualKey.F15:
-            case VirtualKey.F16:
-            case VirtualKey.F17:
-            case VirtualKey.F18:
-            case VirtualKey.F19:
-            case VirtualKey.F20:
-            case VirtualKey.F21:
-            case VirtualKey.F22:
-            case VirtualKey.F23:
-            case VirtualKey.F24:
-            case VirtualKey.NavigationView:
-            case VirtualKey.NavigationMenu:
-            case VirtualKey.NavigationUp:
-            case VirtualKey.NavigationDown:
-            case VirtualKey.NavigationLeft:
-            case VirtualKey.NavigationRight:
-            case VirtualKey.NavigationAccept:
-            case VirtualKey.NavigationCancel:
-            case VirtualKey.NumberKeyLock:
-            case VirtualKey.Scroll:
-            case VirtualKey.LeftShift:
-            case VirtualKey.RightShift:
-            case VirtualKey.LeftControl:
-            case VirtualKey.RightControl:
-            case VirtualKey.LeftMenu:
-            case VirtualKey.RightMenu:
-            case VirtualKey.GoBack:
-            case VirtualKey.GoForward:
-            case VirtualKey.Refresh:
-            case VirtualKey.Stop:
-            case VirtualKey.Search:
-            case VirtualKey.Favorites:
-            case VirtualKey.GoHome:
-            case VirtualKey.GamepadA:
-            case VirtualKey.GamepadB:
-            case VirtualKey.GamepadX:
-            case VirtualKey.GamepadY:
-            case VirtualKey.GamepadRightShoulder:
-            case VirtualKey.GamepadLeftShoulder:
-            case VirtualKey.GamepadLeftTrigger:
-            case VirtualKey.GamepadRightTrigger:
-            case VirtualKey.GamepadDPadUp:
-            case VirtualKey.GamepadDPadDown:
-            case VirtualKey.GamepadDPadLeft:
-            case VirtualKey.GamepadDPadRight:
-            case VirtualKey.GamepadMenu:
-            case VirtualKey.GamepadView:
-            case VirtualKey.GamepadLeftThumbstickButton:
-            case VirtualKey.GamepadRightThumbstickButton:
-            case VirtualKey.GamepadLeftThumbstickUp:
-            case VirtualKey.GamepadLeftThumbstickDown:
-            case VirtualKey.GamepadLeftThumbstickRight:
-            case VirtualKey.GamepadLeftThumbstickLeft:
-            case VirtualKey.GamepadRightThumbstickUp:
-            case VirtualKey.GamepadRightThumbstickDown:
-            case VirtualKey.GamepadRightThumbstickRight:
-            case VirtualKey.GamepadRightThumbstickLeft:
-            default:
-                break;
-        }
-    }
-
-    // 双击模式下，编辑框失去焦点时自动保存
-    private void EditTextBox_LostFocus(object sender, RoutedEventArgs e)
-    {
-        if (InteractionMode == EditableTextBlockInteractionMode.DoubleClick && _isEditing)
-        {
-            SaveEdit();
-        }
-    }
-    #endregion
-
-    #region 状态切换与验证
-
-    private void EnterEditMode()
-    {
-        _isEditing = true;
-        if (_editTextBox != null)
-        {
-            _editTextBox.Text = Text;
-            _editTextBox.Focus(FocusState.Programmatic);
-            _editTextBox.Select(_editTextBox.Text.Length, 0);
-        }
-        // 重置错误信息
-        ErrorMessage = string.Empty;
-        VisualStateManager.GoToState(this, "Valid", true);
-
-        UpdateVisualStates(true);
-
-        EditingStarted?.Invoke(this, new RoutedEventArgs());
-        if (EditCommand != null && EditCommand.CanExecute(null))
-            EditCommand.Execute(null);
-    }
-
-    private void SaveEdit()
-    {
-        if (_editTextBox != null)
-        {
-            // 先验证输入
-            if (!ValidateText())
+            if (_editButton != null)
             {
-                VisualStateManager.GoToState(this, "ValidationError", true);
-                return; // 验证失败则保持编辑状态
+                _editButton.Click -= EditButton_Click;
+                _editButton.PointerEntered -= EditButton_PointerEntered;
+            }
+
+            if (_saveButton != null)
+            {
+                _saveButton.Click -= SaveButton_Click;
+            }
+
+            if (_cancelButton != null)
+            {
+                _cancelButton.Click -= CancelButton_Click;
             }
         }
 
-        _isEditing = false;
-        if (_editTextBox != null)
+        // 编辑开始事件处理
+        private void OnEditingStarted(object sender, RoutedEventArgs e)
         {
-            Text = _editTextBox.Text;
+            VisualStateManager.GoToState(this, "Normal", true);
         }
-        if (_displayTextBlock != null)
+
+        // 鼠标悬停事件处理
+        private void DisplayContainer_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            _displayTextBlock.Text = Text;
+            VisualStateManager.GoToState(this, "PointerOver", true);
         }
-        // 验证通过后恢复为有效状态
-        VisualStateManager.GoToState(this, "Valid", true);
-        UpdateVisualStates(true);
 
-        EditingCompleted?.Invoke(this, new RoutedEventArgs());
-        if (SaveCommand != null && SaveCommand.CanExecute(SaveCommandParameter))
-            SaveCommand.Execute(SaveCommandParameter);
-    }
-
-    private void CancelEdit()
-    {
-        _isEditing = false;
-        VisualStateManager.GoToState(this, "Valid", true);
-        UpdateVisualStates(true);
-
-        EditingCompleted?.Invoke(this, new RoutedEventArgs());
-        if (CancelCommand != null && CancelCommand.CanExecute(null))
-            CancelCommand.Execute(null);
-    }
-
-    /// <summary>
-    /// 验证输入的文本，默认：如果 IsRequired 为 true，则文本不能为空。子类可重写实现更复杂的验证。
-    /// </summary>
-    /// <returns>如果验证通过返回 true，否则返回 false</returns>
-    protected virtual bool ValidateText()
-    {
-        if (IsRequired && string.IsNullOrWhiteSpace(_editTextBox?.Text))
+        private void DisplayContainer_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            ErrorMessage = "此项为必填项。";
+            // 使用一个小延迟来检查是否移到了编辑按钮上
+            // 这里不能直接切换状态，因为可能是移到了编辑按钮上
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                // 检查鼠标是否在编辑按钮上
+                if (_editButton != null && _editButton.IsPointerOver)
+                {
+                    return;
+                }
+
+                VisualStateManager.GoToState(this, "Normal", true);
+            });
+        }
+
+        private void EditButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            // 确保按钮保持显示状态
+            VisualStateManager.GoToState(this, "PointerOver", true);
+        }
+
+        private void DisplayTextBlock_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            EnterEditMode();
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            EnterEditMode();
+
+            // 执行编辑命令
+            if (EditCommand?.CanExecute(EditCommandParameter) == true)
+            {
+                EditCommand.Execute(EditCommandParameter);
+            }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveChanges();
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            CancelEdit();
+
+            // 执行取消命令
+            if (CancelCommand?.CanExecute(CancelCommandParameter) == true)
+            {
+                CancelCommand.Execute(CancelCommandParameter);
+            }
+        }
+
+        private void EditTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // 如果是DoubleClick模式且编辑框失去焦点，自动保存
+            if (InteractionMode == EditableTextBlockInteractionMode.DoubleClick && _isInEditMode)
+            {
+                SaveChanges();
+            }
+        }
+
+        [SuppressMessage("ReSharper", "SwitchStatementHandlesSomeKnownEnumValuesWithDefault")]
+        private void EditTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case VirtualKey.Escape:
+                    CancelEdit();
+                    break;
+                case VirtualKey.Enter when !IsMultiLine:
+                    SaveChanges();
+                    break;
+                default:
+                    return;
+            }
+
+            e.Handled = true;
+        }
+
+        private void EnterEditMode()
+        {
+            if (_isInEditMode) return;
+
+            _originalText = Text;
+            if (_editTextBox != null)
+            {
+                _editTextBox.Text = _originalText;
+            }
+
+            // 直接管理容器的可见性，而不是依赖 VisualStateManager
+            if (_displayTextBlock != null && _editTextBox != null)
+            {
+                if (_displayTextBlock.Parent is Grid displayContainer)
+                {
+                    displayContainer.Visibility = Visibility.Collapsed;
+                }
+
+                if (_editTextBox.Parent is Grid editContainer)
+                {
+                    editContainer.Visibility = Visibility.Visible;
+                }
+            }
+
+            // 尝试直接应用视觉状态到当前控件
+            _ = VisualStateManager.GoToState(this, "EditState", true);
+
+            _isInEditMode = true;
+
             if (_errorTextBlock != null)
+            {
+                _errorTextBlock.Visibility = Visibility.Collapsed;
+            }
+
+            // 设置焦点到文本框
+            _editTextBox?.Focus(FocusState.Programmatic);
+
+            // 触发编辑开始事件
+            EditingStarted?.Invoke(this, new RoutedEventArgs());
+        }
+
+
+        private void SaveChanges()
+        {
+            if (!_isInEditMode || _editTextBox == null) return;
+
+            var newText = _editTextBox.Text;
+
+            // 验证必填项
+            if (IsRequired && string.IsNullOrWhiteSpace(newText))
+            {
+                if (_errorTextBlock == null) return;
                 _errorTextBlock.Text = ErrorMessage;
-            return false;
-        }
-        ErrorMessage = string.Empty;
-        if (_errorTextBlock != null)
-            _errorTextBlock.Text = ErrorMessage;
-        return true;
-    }
+                _errorTextBlock.Visibility = Visibility.Visible;
 
-    /// <summary>
-    /// 根据当前状态切换视觉状态
-    /// </summary>
-    /// <param name="useTransitions">是否使用过渡动画</param>
-    private void UpdateVisualStates(bool useTransitions)
-    {
-        if (InteractionMode == EditableTextBlockInteractionMode.Button)
-        {
-            VisualStateManager.GoToState(this, !_isEditing ? "DisplayState" : "EditState", useTransitions);
-        }
-        else
-        {
-            VisualStateManager.GoToState(this, !_isEditing ? "DisplayState" : "DoubleClickModeEdit", useTransitions);
-        }
-    }
+                return;
+            }
 
-    #endregion
+            // 更新文本
+            Text = newText;
+            ExitEditMode();
+
+            // 执行保存命令
+            if (SaveCommand?.CanExecute(SaveCommandParameter) == true)
+            {
+                SaveCommand.Execute(SaveCommandParameter);
+            }
+        }
+
+        private void CancelEdit()
+        {
+            if (!_isInEditMode) return;
+
+            // 恢复原始文本
+            if (_editTextBox != null)
+            {
+                _editTextBox.Text = _originalText;
+            }
+
+            ExitEditMode();
+        }
+
+        private void ExitEditMode()
+        {
+            // 直接管理容器的可见性，而不是依赖 VisualStateManager
+            if (_displayTextBlock != null && _editTextBox != null)
+            {
+                if (_displayTextBlock.Parent is Grid displayContainer)
+                {
+                    displayContainer.Visibility = Visibility.Visible;
+                }
+
+                if (_editTextBox.Parent is Grid editContainer)
+                {
+                    editContainer.Visibility = Visibility.Collapsed;
+                }
+            }
+
+            // 尝试直接应用视觉状态到当前控件
+            VisualStateManager.GoToState(this, "ReadOnlyState", true);
+
+            _isInEditMode = false;
+
+            if (_errorTextBlock != null)
+            {
+                _errorTextBlock.Visibility = Visibility.Collapsed;
+            }
+
+            // 触发编辑完成事件
+            EditingCompleted?.Invoke(this, new RoutedEventArgs());
+        }
+
+        #endregion
+    }
 }

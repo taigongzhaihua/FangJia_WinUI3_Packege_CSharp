@@ -9,6 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:helpers="using:FangJia.Helpers"
     xmlns:converters="using:FangJia.Converters"
+    xmlns:control="using:TGZH.Control"
     mc:Ignorable="d"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}"
     NavigationCacheMode="Disabled">
@@ -21,6 +22,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="24,12">
             <TextBlock Text="级别：" Margin="10,0,0,0"
@@ -53,52 +55,60 @@
             </RadioButtons>
 
             <ProgressRing x:Name="LoadingRing"></ProgressRing>
+            <!-- 添加搜索框 -->
+            <TextBlock Text="搜索：" Margin="40,0,0,0" VerticalAlignment="Center" />
+            <AutoSuggestBox x:Name="SearchBox" Width="200" 
+                            QuerySubmitted="SearchBox_QuerySubmitted"
+                            PlaceholderText="输入搜索关键词" />
         </StackPanel>
+        <!-- 日志列表区域 -->
         <ScrollView Grid.Row="1"
-                    Margin="8,0,8,24"
-                    x:Name="LogsBlock">
-            <!-- 日志显示区域 -->
+                    Margin="8,0,8,0"
+                    CornerRadius="4,4,0,0"
+                    x:Name="LogsBlock"
+                    CanBeScrollAnchor="True"
+                    HorizontalScrollMode="Enabled"
+                    HorizontalScrollBarVisibility="Auto"
+                    HorizontalScrollChainMode="Auto"
+                    HorizontalScrollRailMode="Enabled"
+                    RequestedTheme="Dark" 
+                    Background="Black">
             <ItemsRepeater ItemsSource="{x:Bind FilteredLogs,Mode=OneWay}">
                 <ItemsRepeater.Layout>
                     <StackLayout Orientation="Vertical" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
-                    <!-- 指定 x:DataType 可以获得编译时类型检查（可选） -->
-                    <DataTemplate x:DataType="helpers:LogItem">
-                        <!-- 为每个项创建一个 TextBlock，
-                 将整个数据对象绑定到 Tag 属性上 -->
-                        <Grid Margin="5,1.5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="550" />
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ItemTextBlock" Tag="{x:Bind}" TextWrapping="NoWrap" TextTrimming="Clip"
-                                       Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Top">
-                                <TextBlock.Inlines>
-                                    <!-- 每个 Run 通过 ElementName 引用当前 TextBlock 的 Tag 对象 -->
-                                    <Run Text="[" Foreground="DeepPink"/>
-                                    <Run
-                                        Text="{Binding Tag.TimestampUtc, ElementName=ItemTextBlock,Converter={StaticResource DateTimeToStringConverter}}"
-                                        Foreground="SlateGray" />
-                                    <Run Text="]  ["  Foreground="DeepPink"/>
-                                    <Run Text="{Binding Tag.Level, ElementName=ItemTextBlock}" FontWeight="Bold" 
-                                         Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
-                                    <Run Text="]&#x09;"  Foreground="DeepPink"/>
-                                    <Run Text="{Binding Tag.Logger, ElementName=ItemTextBlock}" FontWeight="SemiBold" 
-                                         Foreground="Salmon" />
-                                </TextBlock.Inlines>
-                            </TextBlock>
-                            <TextBlock TextWrapping="WrapWholeWords" Grid.Column="1" VerticalAlignment="Top">
-                                <Run Text="{Binding Tag.Message, ElementName=ItemTextBlock}"
-                                     Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
-                                <Run Text="&#x09;" />
-                                <Run Text="{Binding Tag.Exception, ElementName=ItemTextBlock}"
-                                     Foreground="{Binding Tag.Level, ElementName=ItemTextBlock,Converter={StaticResource LogLevelToForegroundConverter}}" />
-                            </TextBlock>
-                        </Grid>
+                    <DataTemplate x:DataType="control:LogItem">
+                        <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                BorderThickness="0,0,0,1" 
+                                Padding="4" 
+                                Margin="0,2">
+                                <control:LogHighlightControl 
+                                    LogItem="{x:Bind}" 
+                                    CurrentUser="taigongzhaihua"
+                                    HorizontalAlignment="Stretch" />
+                        </Border>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
         </ScrollView>
+
+        <!-- 底部状态栏 -->
+        <Grid Grid.Row="2" 
+              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+              Padding="12,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" x:Name="LogCountTextBlock" VerticalAlignment="Center"
+                       Text="总数: 0  |  DEBUG: 0  |  INFO: 0  |  WARN: 0  |  ERROR: 0" />
+
+            <TextBlock Grid.Column="2" x:Name="CurrentTimeTextBlock" VerticalAlignment="Center" 
+                       Text="2025-03-05 06:10:08 UTC  |  用户: taigongzhaihua" />
+        </Grid>
     </Grid>
+
 </Page>

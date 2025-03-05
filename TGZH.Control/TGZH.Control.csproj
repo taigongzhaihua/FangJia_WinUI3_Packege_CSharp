@@ -32,6 +32,7 @@
   <ItemGroup>
     <None Remove="Themes\EditableTextBlock.xaml" />
     <None Remove="Themes\Generic.xaml" />
+    <None Remove="Themes\LogHighlightControl.xaml" />
     <None Remove="Themes\MultiSelectComboBox.xaml" />
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +47,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Docs\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Themes\LogHighlightControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Themes\EditableTextBlock.xaml">
