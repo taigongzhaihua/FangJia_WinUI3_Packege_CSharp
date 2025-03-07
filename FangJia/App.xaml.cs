@@ -122,8 +122,6 @@ public partial class App
         builder.RegisterType<FormulationViewModel>().SingleInstance();
         builder.RegisterType<DrugViewModel>().SingleInstance();
 
-        builder.RegisterType<FormulationManager>().InstancePerLifetimeScope();
-
         return builder.Build();
     }
 

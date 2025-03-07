@@ -7,6 +7,8 @@
 // FangJia 仅做学习交流使用
 // 转载请注明出处
 //------------------------------------------------------------------------
+using CommunityToolkit.WinUI;
+using CommunityToolkit.WinUI.Media;
 using FangJia.Helpers;
 using FangJia.ViewModel;
 using Microsoft.UI.Xaml;
@@ -27,12 +29,19 @@ namespace FangJia.Pages
 
         public DrugPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
         private void SearchBox_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
-
+            if (sender is { Text: { Length: > 0 } text })
+            {
+                ViewModel.SearchDrugSummaries(text);
+            }
+            else
+            {
+                ViewModel.ClearSearch();
+            }
         }
 
         private void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
@@ -52,7 +61,38 @@ namespace FangJia.Pages
 
         private void OnAdaptiveStatesCurrentStateChanged(object sender, VisualStateChangedEventArgs e)
         {
+            switch (e.NewState.Name)
+            {
+                case "WideState":
+                    Effects.SetShadow(Border, null!);
+                    break;
+                case "NarrowState":
+                    Effects.SetShadow(Border, new AttachedCardShadow
+                    {
+                        Opacity = 0.4,
+                        BlurRadius = 8,
+                        Offset = "1"
+                    });
+                    break;
+            }
+        }
 
+        private void DrugInsertButton_OnClick(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DrugDeleteButton_OnClick(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0 && sender is ListView listView)
+            {
+                listView.ScrollIntoView(e.AddedItems[0]);
+            }
         }
     }
 }

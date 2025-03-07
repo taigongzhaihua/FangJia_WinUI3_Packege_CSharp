@@ -14,7 +14,6 @@ using CommunityToolkit.WinUI.UI.Controls;
 using FangJia.Common;
 using FangJia.Helpers;
 using FangJia.ViewModel;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -34,7 +33,6 @@ namespace FangJia.Pages;
 public sealed partial class FormulationPage
 {
     internal readonly FormulationViewModel ViewModel = Locator.GetService<FormulationViewModel>();
-    private readonly DispatcherQueue _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     // 常量定义
@@ -43,8 +41,12 @@ public sealed partial class FormulationPage
     public FormulationPage()
     {
         InitializeComponent();
-        _ = ViewModel.LoadCategoriesAsync(_dispatcherQueue);
+        _ = ViewModel.LoadCategoriesAsync(App.MainDispatcherQueue!);
+        Loaded += Page_Loaded;
+    }
 
+    private void Page_Loaded(object sender, RoutedEventArgs e)
+    {
         // 注册事件处理
         ViewModel.SelectedFormulaChanged += ViewModelSelectedFormulaChanged;
         ViewModel.FormulaImageChanged += ViewModelOnFormulaImageChanged;
@@ -66,7 +68,7 @@ public sealed partial class FormulationPage
     /// <summary>
     /// 应用淡入淡出动画到指定元素
     /// </summary>
-    private void ApplyFadeAnimation(UIElement element, double fromValue, double toValue, double durationSeconds)
+    private static void ApplyFadeAnimation(UIElement element, double fromValue, double toValue, double durationSeconds)
     {
         var animation = new DoubleAnimationUsingKeyFrames
         {
@@ -97,7 +99,7 @@ public sealed partial class FormulationPage
     /// <summary>
     /// 对多个元素应用淡入淡出动画
     /// </summary>
-    private void ApplyFadeAnimationToElements(double fromValue, double toValue, double durationSeconds, params UIElement[] elements)
+    private static void ApplyFadeAnimationToElements(double fromValue, double toValue, double durationSeconds, params UIElement[] elements)
     {
         var storyboard = new Storyboard();
 
@@ -324,7 +326,7 @@ public sealed partial class FormulationPage
                 {
                     Opacity = 0.4,
                     BlurRadius = 8,
-                    Offset = "2"
+                    Offset = "1"
                 });
                 break;
         }

@@ -139,7 +139,7 @@ namespace FangJia.DataAccess
         /// <summary>
         /// 安全释放连接资源
         /// </summary>
-        private void SafeDisposeConnection(SqliteConnection connection)
+        private static void SafeDisposeConnection(SqliteConnection connection)
         {
             try
             {
@@ -292,7 +292,8 @@ namespace FangJia.DataAccess
         /// <summary>
         /// 异步释放连接资源
         /// </summary>
-        public ValueTask DisposeAsync()
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1816:Dispose 方法应调用 SuppressFinalize", Justification = "<挂起>")]
+        ValueTask IAsyncDisposable.DisposeAsync()
         {
             Dispose();
             return ValueTask.CompletedTask;

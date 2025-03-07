@@ -171,7 +171,7 @@ public sealed partial class LogsPage
             // 在UI线程显示错误提示对话框
             await _dispatcherQueue.EnqueueAsync(async () =>
             {
-                ContentDialog errorDialog = new ContentDialog
+                ContentDialog errorDialog = new()
                 {
                     Title = "读取日志错误",
                     Content = $"读取日志时出现错误: {e.Message}",
@@ -210,7 +210,7 @@ public sealed partial class LogsPage
         int totalCount = FilteredLogs.Count;
         int debugCount = FilteredLogs.Count(l => l.Level == "DEBUG");
         int infoCount = FilteredLogs.Count(l => l.Level == "INFO");
-        int warnCount = FilteredLogs.Count(l => l.Level == "WARN" || l.Level == "WARNING");
+        int warnCount = FilteredLogs.Count(l => l.Level is "WARN" or "WARNING");
         int errorCount = FilteredLogs.Count(l => l.Level == "ERROR");
 
         // 更新日志计数显示
@@ -403,7 +403,7 @@ public sealed partial class LogsPage
             if ("warning".Contains(inputText)) suggestions.Add("warning");
             if ("exception".Contains(inputText)) suggestions.Add("exception");
             if ("failed".Contains(inputText)) suggestions.Add("failed");
-            if (_currentUser.ToLower().Contains(inputText)) suggestions.Add(_currentUser);
+            if (_currentUser.Contains(inputText, StringComparison.CurrentCultureIgnoreCase)) suggestions.Add(_currentUser);
 
             // 更新搜索建议
             sender.ItemsSource = suggestions;
@@ -415,13 +415,11 @@ public sealed partial class LogsPage
     /// </summary>
     private void CopyLogMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuFlyoutItem item && item.DataContext is LogItem logItem)
-        {
-            // 创建数据包并复制日志文本到剪贴板
-            var dataPackage = new DataPackage();
-            dataPackage.SetText(logItem.ToString());
-            Clipboard.SetContent(dataPackage);
-        }
+        if (sender is not MenuFlyoutItem { DataContext: LogItem logItem }) return;
+        // 创建数据包并复制日志文本到剪贴板
+        var dataPackage = new DataPackage();
+        dataPackage.SetText(logItem.ToString());
+        Clipboard.SetContent(dataPackage);
     }
 
     /// <summary>

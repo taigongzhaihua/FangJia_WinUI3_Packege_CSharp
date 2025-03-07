@@ -50,7 +50,8 @@ public sealed partial class MainWindow
         AppTitleBar.Loaded += AppTitleBar_Loaded;
         ContentFrame.Navigated += ContentFrame_Navigated;
         _appWindow.Closing += OnClosing;
-        TrayIcon.Loaded += TrayIcon_Loaded;
+        // TrayIcon.Loaded += TrayIcon_Loaded;
+
 
         // 2. 扩展标题栏
         ExtendsContentIntoTitleBar = true;
@@ -83,8 +84,9 @@ public sealed partial class MainWindow
     /// <param name="e">事件参数</param>
     private void TrayIcon_Loaded(object sender, RoutedEventArgs e)
     {
-        Activate(); // 使窗口获得焦点
         this.Show(); // 显示窗口
+        Activate(); // 使窗口获得焦点
+
     }
 
     /// <summary>

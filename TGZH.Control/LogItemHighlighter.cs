@@ -60,7 +60,8 @@ namespace TGZH.Control
             Boolean, // 布尔值
             Null, // null值
             CurrentUser, // 当前用户名
-            Special // 特殊标记
+            Special, // 特殊标记
+            Path
         }
 
         public LogItemHighlighter()
@@ -167,7 +168,8 @@ namespace TGZH.Control
                     new TextStyle { Foreground = new SolidColorBrush(Colors.Yellow), IsBold = true }
                 },
                 { ContentDetailType.Keyword, new TextStyle { Foreground = new SolidColorBrush(Colors.SkyBlue) } },
-                { ContentDetailType.Special, new TextStyle { Foreground = new SolidColorBrush(Colors.HotPink) } }
+                { ContentDetailType.Special, new TextStyle { Foreground = new SolidColorBrush(Colors.HotPink) } },
+                { ContentDetailType.Path, new TextStyle { Foreground = new SolidColorBrush(Colors.LightGreen) } }
             };
         }
 
@@ -372,7 +374,7 @@ namespace TGZH.Control
                                                 """;
 
             // 2. 识别类似 SomeClass.Method:123 的模式（类名.方法名:行号）
-            const string classMethodLinePattern = @"([A-Za-z0-9_\.]+)\.([A-Za-z0-9_]+):(\d+)";
+            const string classMethodLinePattern = @"([A-Za-z0-9_\.]+)\.([A-Za-z0-9_]+)(:(\d+))?";
 
             // 3. 识别类似 at Namespace.Class.Method() in File.cs:line 123 的模式
             const string stackTracePattern =
@@ -382,14 +384,14 @@ namespace TGZH.Control
             const string propertyPattern = @"([A-Za-z0-9_]+)=([^\.,:;\(\)\[\]{}=\s]+)";
 
             // 5. 识别数字 (包括整数、小数、百分比)
-            const string numberPattern = @"(?<![A-Za-z_])(\d+(\.\d+)?%?)(?![A-Za-z0-9_])";
+            const string numberPattern = @"(?<![a-zA-Z0-9_])(\d+(\.\d+)?%?)(?=\s*(ms|KB|MB|GB|TB|B|s|Hz|V|A|W|px|em|rem)?\b|[^a-zA-Z0-9_]|$)";
 
             // 6. 识别路径 - 仅匹配非引号内的路径
             const string pathPattern = """(?<!["'])([A-Za-z]:\\[^"',\s\]]+)(?!["'])""";
 
             // 7. 识别关键字
             const string keywordPattern =
-                @"\b(null|true|false|async|await|new|throw|return|if|else|for|while|try|catch|finally|ms)\b";
+                @"((?<=\b)(null|true|false|async|await|new|throw|return|if|else|for|while|try|catch|finally)|(?<=\b|\d)(ms|KB|MB|GB|TB|B|s|Hz|V|A|W|px|em|rem))(?=\b)";
 
             // 8. 识别标点符号
             const string punctuationPattern = @"[.,:;()\[\]{}=]";
@@ -569,7 +571,7 @@ namespace TGZH.Control
                         HandleQuotedContent(paragraph, matchInfo.Match);
                         break;
 
-                    case @"([A-Za-z0-9_\.]+)\.([A-Za-z0-9_]+):(\d+)":
+                    case @"([A-Za-z0-9_\.]+)\.([A-Za-z0-9_]+)(:(\d+))?":
                         // 类名.方法名:行号
                         HandleClassMethodLine(paragraph, matchInfo.Match);
                         break;
@@ -597,12 +599,10 @@ namespace TGZH.Control
             }
 
             // 添加剩余文本
-            if (currentPos < content.Length)
-            {
-                var remainingText = content.Substring(currentPos);
-                var remainingRun = new Run { Text = remainingText };
-                paragraph.Inlines.Add(remainingRun);
-            }
+            if (currentPos >= content.Length) return;
+            var remainingText = content[currentPos..];
+            var remainingRun = new Run { Text = remainingText };
+            paragraph.Inlines.Add(remainingRun);
         }
 
         // 新增方法：专门处理引号包围的内容
@@ -614,14 +614,14 @@ namespace TGZH.Control
             paragraph.Inlines.Add(startQuote);
 
             // 引号内容
-            string quotedText = match.Groups[1].Value;
+            var quotedText = match.Groups[1].Value;
 
             // 检查是否为路径格式
-            if (Regex.IsMatch(quotedText, @"^[A-Za-z]:\\"))
+            if (PathHeadRegex().IsMatch(quotedText))
             {
                 // 这是一个路径，使用路径样式
                 var pathRun = new Run { Text = quotedText };
-                ApplyStyle(pathRun, _detailStyles[ContentDetailType.String]);
+                ApplyStyle(pathRun, _detailStyles[ContentDetailType.Path]);
                 paragraph.Inlines.Add(pathRun);
             }
             else
@@ -642,21 +642,28 @@ namespace TGZH.Control
         private void HandleClassMethodLine(Paragraph paragraph, Match match)
         {
             // 类名部分
-            string fullTypeName = match.Groups[1].Value;
-            string methodName = match.Groups[2].Value;
-            string lineNumber = match.Groups[3].Value;
+            var fullTypeName = match.Groups[1].Value;
+            var methodName = match.Groups[2].Value;
+            var lineNumber = match.Groups[4].Value;
 
             // 处理可能包含命名空间的类名
-            string[] namespaceParts = fullTypeName.Split('.');
+            var namespaceParts = fullTypeName.Split('.');
 
-            for (int i = 0; i < namespaceParts.Length; i++)
+            for (var i = 0; i < namespaceParts.Length; i++)
             {
-                if (i == namespaceParts.Length - 1)
+                if (i == namespaceParts.Length - 1 && !string.IsNullOrEmpty(lineNumber))
                 {
                     // 类名
                     var classRun = new Run { Text = namespaceParts[i] };
                     ApplyStyle(classRun, _detailStyles[ContentDetailType.ClassName]);
                     paragraph.Inlines.Add(classRun);
+                }
+                else if (i == namespaceParts.Length - 1 && string.IsNullOrEmpty(lineNumber))
+                {
+                    // 命名空间
+                    var nsRun = new Run { Text = namespaceParts[i] };
+                    ApplyStyle(nsRun, _detailStyles[ContentDetailType.Namespace]);
+                    paragraph.Inlines.Add(nsRun);
                 }
                 else
                 {
@@ -682,15 +689,18 @@ namespace TGZH.Control
             ApplyStyle(methodRun, _detailStyles[ContentDetailType.MethodName]);
             paragraph.Inlines.Add(methodRun);
 
-            // 冒号
-            var colonRun = new Run { Text = ":" };
-            ApplyStyle(colonRun, _detailStyles[ContentDetailType.Punctuation]);
-            paragraph.Inlines.Add(colonRun);
+            if (!string.IsNullOrEmpty(lineNumber))
+            {
+                // 冒号
+                var colonRun = new Run { Text = ":" };
+                ApplyStyle(colonRun, _detailStyles[ContentDetailType.Punctuation]);
+                paragraph.Inlines.Add(colonRun);
 
-            // 行号
-            var lineRun = new Run { Text = lineNumber };
-            ApplyStyle(lineRun, _detailStyles[ContentDetailType.LineNumber]);
-            paragraph.Inlines.Add(lineRun);
+                // 行号
+                var lineRun = new Run { Text = lineNumber };
+                ApplyStyle(lineRun, _detailStyles[ContentDetailType.LineNumber]);
+                paragraph.Inlines.Add(lineRun);
+            }
         }
 
         // 处理堆栈跟踪行
@@ -928,27 +938,35 @@ namespace TGZH.Control
                 // 处理日志源和消息部分
                 var parts = logText.Split(["\t："], 2, StringSplitOptions.None);
 
-                if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]))
+                switch (parts.Length)
                 {
-                    // 处理Logger部分
-                    HighlightLogger(paragraph, parts[0]);
+                    case > 0 when !string.IsNullOrWhiteSpace(parts[0]):
+                        {
+                            // 处理Logger部分
+                            HighlightLogger(paragraph, parts[0]);
 
-                    if (parts.Length <= 1) return paragraph;
-                    // 添加制表符和冒号
-                    paragraph.Inlines.Add(new Run { Text = "\t：" });
+                            if (parts.Length <= 1) return paragraph;
+                            // 添加制表符和冒号
+                            paragraph.Inlines.Add(new Run { Text = "\t：" });
 
-                    // 处理消息部分
-                    HighlightMessageContent(paragraph, parts[1]);
-                }
-                else if (parts.Length > 1)
-                {
-                    // 直接处理消息部分
-                    HighlightMessageContent(paragraph, parts[1]);
-                }
-                else if (!string.IsNullOrWhiteSpace(logText))
-                {
-                    // 处理剩余文本
-                    HighlightMessageContent(paragraph, logText);
+                            // 处理消息部分
+                            HighlightMessageContent(paragraph, parts[1]);
+                            break;
+                        }
+                    case > 1:
+                        // 直接处理消息部分
+                        HighlightMessageContent(paragraph, parts[1]);
+                        break;
+                    default:
+                        {
+                            if (!string.IsNullOrWhiteSpace(logText))
+                            {
+                                // 处理剩余文本
+                                HighlightMessageContent(paragraph, logText);
+                            }
+
+                            break;
+                        }
                 }
 
                 return paragraph;
@@ -991,15 +1009,22 @@ namespace TGZH.Control
             public ContentDetailType Type { get; init; }
             public string Pattern { get; init; }
         }
-
+        // 正则表达式生成器
+        // 1. 时间戳
         [GeneratedRegex(@"^\[(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})\.(\d{3})\]")]
         private static partial Regex TimestampRegex();
 
+        // 2. 日志级别
         [GeneratedRegex(@"^\s*\[([^\]]+)\]")]
         private static partial Regex LevelRegex();
 
+        // 3. 异常类型
         [GeneratedRegex(@"^([A-Za-z0-9\.]+Exception)")]
         private static partial Regex ExceptionTypeRegex();
+
+        // 4. 路径头部
+        [GeneratedRegex(@"^[A-Za-z]:\\")]
+        private static partial Regex PathHeadRegex();
     }
 
     // 文本样式类

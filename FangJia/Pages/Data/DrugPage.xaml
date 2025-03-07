@@ -11,12 +11,13 @@
     xmlns:converters="using:FangJia.Converters"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
     xmlns:control="using:TGZH.Control"
-    mc:Ignorable="d"
+    xmlns:data="using:FangJia.Common"
+    mc:Ignorable="d" NavigationCacheMode="Enabled"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
 
     <Page.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter"/>
+        <converters:BooleanToVisibilityFallbackConverter x:Key="BooleanToVisibilityFallbackConverter" />
         <converters:ByteArrayToImgConverter x:Key="ByteArrayToImgConverter" />
         <media:AttachedCardShadow x:Key="ViewerShadow" BlurRadius="4" Opacity="0.2" Offset="0" />
     </Page.Resources>
@@ -30,29 +31,29 @@
                     </VisualState.StateTriggers>
                     <Storyboard>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
-                                                         Storyboard.TargetProperty="DisplayMode">
+                                               Storyboard.TargetProperty="DisplayMode">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="Inline" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
-                                                         Storyboard.TargetProperty="IsPaneOpen">
+                                               Storyboard.TargetProperty="IsPaneOpen">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="True" />
                         </ObjectAnimationUsingKeyFrames>
 
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneOpenOrCloseButton"
-                                                         Storyboard.TargetProperty="Visibility">
+                                               Storyboard.TargetProperty="Visibility">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                         Storyboard.TargetProperty="Padding">
+                                               Storyboard.TargetProperty="Padding">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="0" />
                         </ObjectAnimationUsingKeyFrames>
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                         Storyboard.TargetProperty="Background">
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                               Storyboard.TargetProperty="Fill">
                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                      Value="{ThemeResource ControlFillColorTransparentBrush}" />
+                                            Value="{ThemeResource ControlFillColorTransparentBrush}" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
-                                                         Storyboard.TargetProperty="Margin">
+                                               Storyboard.TargetProperty="Margin">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="20,8,20,0" />
                         </ObjectAnimationUsingKeyFrames>
                     </Storyboard>
@@ -65,30 +66,30 @@
                     </VisualState.StateTriggers>
                     <Storyboard>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
-                                                         Storyboard.TargetProperty="DisplayMode">
+                                               Storyboard.TargetProperty="DisplayMode">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="Overlay" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SplitView"
-                                                         Storyboard.TargetProperty="IsPaneOpen">
+                                               Storyboard.TargetProperty="IsPaneOpen">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="False" />
                         </ObjectAnimationUsingKeyFrames>
 
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneOpenOrCloseButton"
-                                                         Storyboard.TargetProperty="Visibility">
+                                               Storyboard.TargetProperty="Visibility">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="Visible" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                         Storyboard.TargetProperty="Padding">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,38,0,0" />
+                                               Storyboard.TargetProperty="Padding">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="16,38,0,0" />
                         </ObjectAnimationUsingKeyFrames>
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                         Storyboard.TargetProperty="Background">
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                               Storyboard.TargetProperty="Fill">
                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                      Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
+                                            Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
-                                                         Storyboard.TargetProperty="Margin">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,8,0,0" />
+                                               Storyboard.TargetProperty="Margin">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,0,0,0" />
                         </ObjectAnimationUsingKeyFrames>
 
                     </Storyboard>
@@ -96,12 +97,12 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <Button Width="36" Height="30"
-                  VerticalAlignment="Top" HorizontalAlignment="Right"
-                  x:Name="PaneOpenOrCloseButton"
-                  Click="PaneOpenOrCloseButton_OnClick"
-                  Canvas.ZIndex="2"
-                  Margin="16,12"
-                  BorderThickness="0">
+        VerticalAlignment="Top" HorizontalAlignment="Right"
+        x:Name="PaneOpenOrCloseButton"
+        Click="PaneOpenOrCloseButton_OnClick"
+        Canvas.ZIndex="2"
+        Margin="16,12"
+        BorderThickness="0">
             <Button.Resources>
                 <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
                 <ResourceDictionary>
@@ -109,31 +110,30 @@
                         <ResourceDictionary x:Key="Default">
                             <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
                             <StaticResource x:Key="ButtonBackgroundPointerOver"
-                                              ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
                             <StaticResource x:Key="ButtonBackgroundPressed"
-                                              ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="HighContrast">
-                            <StaticResource x:Key="ButtonBackground"
-                                              ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                            <StaticResource x:Key="ButtonBackground" ResourceKey="SystemControlBackgroundBaseLowBrush" />
                             <StaticResource x:Key="ButtonBackgroundPointerOver"
-                                              ResourceKey="SystemColorHighlightTextColorBrush" />
+                                    ResourceKey="SystemColorHighlightTextColorBrush" />
                             <StaticResource x:Key="ButtonBackgroundPressed"
-                                              ResourceKey="SystemColorHighlightTextColorBrush" />
+                                    ResourceKey="SystemColorHighlightTextColorBrush" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="Light">
                             <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
                             <StaticResource x:Key="ButtonBackgroundPointerOver"
-                                              ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
                             <StaticResource x:Key="ButtonBackgroundPressed"
-                                              ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="Dark">
                             <StaticResource x:Key="ButtonBackground" ResourceKey="ControlFillColorTransparentBrush" />
                             <StaticResource x:Key="ButtonBackgroundPointerOver"
-                                              ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorBaseBrush" />
                             <StaticResource x:Key="ButtonBackgroundPressed"
-                                              ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
+                                    ResourceKey="AcrylicBackgroundFillColorDefaultBrush" />
                         </ResourceDictionary>
                     </ResourceDictionary.ThemeDictionaries>
                 </ResourceDictionary>
@@ -151,20 +151,49 @@
         </Button>
         <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Right"
                    PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
-  
             <SplitView.Pane>
-                <Grid>
-                    <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
-                            Margin="8,8,0,0"
-                            BorderThickness="0" Canvas.ZIndex="1">
-                        <Grid x:Name="PaneGrid">
+                <Grid winUi:UIElementExtensions.ClipToBounds="False" Padding="8,8,8,8">
+                    <Rectangle x:Name="Border" Fill="{ThemeResource ControlFillColorTransparentBrush}"
+                               RadiusX="8" RadiusY="8" />
+                    <Grid x:Name="PaneGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <AutoSuggestBox x:Name="SearchBox" Grid.Row="0" MinWidth="200" Margin="10,0,10,10"
-                                            VerticalAlignment="Center" x:FieldModifier="public"
+                            <Grid.Resources>
+                                <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
+                                <ResourceDictionary>
+                                    <ResourceDictionary.ThemeDictionaries>
+                                        <ResourceDictionary x:Key="Default">
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="HighContrast">
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Light">
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Dark">
+                                            <StaticResource x:Key="ButtonBackground"
+                                                            ResourceKey="ControlFillColorTransparentBrush" />
+                                        </ResourceDictionary>
+                                    </ResourceDictionary.ThemeDictionaries>
+                                </ResourceDictionary>
+                                <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
+                            </Grid.Resources>
+                            <AutoSuggestBox x:Name="SearchBox"
+                                            Grid.Row="0" Grid.Column="0"
+                                            MinWidth="200" Margin="0,0,0,0"
+                                            VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                            x:FieldModifier="public"
                                             KeyboardAcceleratorPlacementMode="Hidden" PlaceholderText="搜索"
                                             QueryIcon="Find"
                                             TextChanged="SearchBox_OnTextChanged"
@@ -174,8 +203,52 @@
                                     <KeyboardAccelerator Key="S" Modifiers="Control" />
                                 </AutoSuggestBox.KeyboardAccelerators>
                             </AutoSuggestBox>
+                            <Button Grid.Row="0" Grid.Column="1"
+                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                    Padding="4" Margin="4,0,2,0"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="新增" HorizontalAlignment="Right"
+                                    Command="{x:Bind ViewModel.AddNewDrugCommand}">
+                                <FontIcon Glyph="&#xE710;" FontSize="16" />
+                            </Button>
+                            <Button Grid.Row="0" Grid.Column="2"
+                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                    Padding="4" Margin="2,0,8,0"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="删除" HorizontalAlignment="Right"
+                                    Command="{x:Bind ViewModel.DeleteSelectedDrugCommand}">
+                                <FontIcon Glyph="&#xE738;" FontSize="16" />
+                            </Button>
+                            <ListView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                      ItemsSource="{x:Bind ViewModel.DrugGroups.View,Mode=OneWay}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedDrugSummary, Mode=TwoWay}"
+                                      Padding="0,0,4,0" Margin="8,0"
+                                      SelectionChanged="Selector_OnSelectionChanged">
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate x:DataType="data:GroupInfoList">
+                                                <Border AutomationProperties.AccessibilityView="Raw">
+                                                    <TextBlock Text="{x:Bind Key}"
+                                                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                                                               AutomationProperties.AccessibilityView="Raw" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ListView.GroupStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="data:DrugSummary">
+                                        <TextBlock Text="{x:Bind Name}" Margin="16,0,0,0" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Grid>
-                    </Border>
                 </Grid>
             </SplitView.Pane>
             <SplitView.Content>
@@ -185,7 +258,7 @@
                                   CornerRadius="4,4,0,0" BorderThickness="0"
                                   Background="{ThemeResource ControlFillColorDefaultBrush}"
                                   winUi:Effects.Shadow="{StaticResource ViewerShadow}"
-                                  Margin="20,8,20,0" Padding="16"
+                                  Margin="20,8,20,0" Padding="16" 
                                   Visibility="{x:Bind ViewModel.IsDrugSelected,Mode=OneWay,Converter={StaticResource BooleanToVisibilityConverter}}">
                         <ScrollViewer.Transitions>
                             <TransitionCollection>
@@ -194,10 +267,11 @@
                         </ScrollViewer.Transitions>
 
                         <Grid Padding="0,0,0,30"
-                              MaxWidth="760" MinWidth="525">
+                              MaxWidth="760" MinWidth="525"
+                              HorizontalAlignment="Center">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*" MaxWidth="380" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="3*" MaxWidth="380"/>
+                                <ColumnDefinition Width="2*" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -212,22 +286,96 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition />
                             </Grid.RowDefinitions>
-                            <StackPanel Orientation="Horizontal"
-                                        Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
-                                        Margin="0,20,0,30"
-                                        HorizontalAlignment="Stretch">
-                                <control:EditableTextBlock
-                                    Text="{x:Bind ViewModel.SelectedDrug.Name,Mode=TwoWay,FallbackValue='九转金丹'}"
-                                    FontSize="26" FontWeight="SemiBold"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    Padding="8,6,10,12" Margin="0" />
-                                <control:EditableTextBlock IsMultiLine="False" InteractionMode="Button"
-                                                           VerticalAlignment="Bottom"
-                                                           Padding="8,6,10,12" Margin="0"
-                                                           Text="{x:Bind ViewModel.SelectedDrug.Category,Mode=TwoWay,FallbackValue='《太上老君炼丹录》'}"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            </StackPanel></Grid>
+                            
+                            <control:EditableTextBlock
+                                Text="{x:Bind ViewModel.SelectedDrug.Name,Mode=TwoWay,FallbackValue='人参果'}"
+                                FontSize="26" FontWeight="SemiBold"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0"
+                                Padding="8,6,10,12" Margin="0,20,0,30" 
+                                SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                SaveCommandParameter="Name"/>
+
+                            
+                            <Image Grid.Column="0" Grid.Row="1" Margin="4" x:Name="Image"
+                                   Source="{x:Bind ViewModel.SelectedDrug.DrugImage.Image,Mode=OneWay,Converter={StaticResource ByteArrayToImgConverter},FallbackValue={x:Null}}" />
+                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="12,0">
+                                <control:EditableTextBlock Header="分类" 
+                                                           IsMultiLine="True"
+                                                           Text="{x:Bind ViewModel.SelectedDrug.Category,Mode=TwoWay,FallbackValue='果实类'}" 
+                                                           SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                           SaveCommandParameter="Category"/>
+                                <control:EditableTextBlock Header="英文名"
+                                                           Text="{x:Bind ViewModel.SelectedDrug.EnglishName,Mode=TwoWay,FallbackValue=''}"
+                                                           IsMultiLine="True" 
+                                                           SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                           SaveCommandParameter="EnglishName"/>
+                                <control:EditableTextBlock Header="拉丁名"
+                                                           Text="{x:Bind ViewModel.SelectedDrug.LatinName,Mode=TwoWay,FallbackValue=''}"
+                                                           IsMultiLine="True" SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                           SaveCommandParameter="LatinName"/>
+                            </StackPanel>
+                            <control:EditableTextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="产地" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Origin,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Origin"/>
+                            <control:EditableTextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="性状" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Properties,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Properties"/>
+                            <control:EditableTextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="品质" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Quality,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Quality"/>
+                            <control:EditableTextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="性味" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Taste,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Taste"/>
+                            <control:EditableTextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="归经" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Meridian,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Meridian"/>
+                            <control:EditableTextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="功效" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Effect,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Effect"/>
+                            <control:EditableTextBlock Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="注解" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Notes,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Notes"/>
+                            <control:EditableTextBlock Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="炮制品类" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Processed,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Processed"/>
+                            <control:EditableTextBlock Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2"
+                                                       Header="来源" 
+                                                       IsMultiLine="True"
+                                                       Text="{x:Bind ViewModel.SelectedDrug.Source,Mode=TwoWay,FallbackValue=''}"
+                                                       SaveCommand="{x:Bind ViewModel.UpdateSelectedDrugCommand}"
+                                                       SaveCommandParameter="Source"/>
+
+                        </Grid>
                     </ScrollViewer>
+                    <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Canvas.ZIndex="0"
+                               Visibility="{x:Bind ViewModel.IsDrugSelected,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityFallbackConverter}}">
+                        请选择要维护的药物
+                    </TextBlock>
                 </Grid>
             </SplitView.Content>
         </SplitView>

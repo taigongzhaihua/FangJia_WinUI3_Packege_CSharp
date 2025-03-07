@@ -13,7 +13,7 @@
     xmlns:winUi="using:CommunityToolkit.WinUI"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls"
-    mc:Ignorable="d"
+    mc:Ignorable="d" NavigationCacheMode="Enabled"
     Background="{ThemeResource ControlAltFillColorTransparentBrush}">
     <Page.Resources>
         <common:ItemTemplateSelector x:Key="CategoryItemTemplateSelector">
@@ -55,8 +55,8 @@
                                                        Storyboard.TargetProperty="Padding">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="0" />
                         </ObjectAnimationUsingKeyFrames>
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                       Storyboard.TargetProperty="Background">
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                                       Storyboard.TargetProperty="Fill">
                             <DiscreteObjectKeyFrame KeyTime="0"
                                                     Value="{ThemeResource ControlFillColorTransparentBrush}" />
                         </ObjectAnimationUsingKeyFrames>
@@ -90,14 +90,14 @@
                                                        Storyboard.TargetProperty="Padding">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="16,38,0,0" />
                         </ObjectAnimationUsingKeyFrames>
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
-                                                       Storyboard.TargetProperty="Background">
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                                       Storyboard.TargetProperty="Fill">
                             <DiscreteObjectKeyFrame KeyTime="0"
                                                     Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
                                                        Storyboard.TargetProperty="Margin">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,8,0,0" />
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="0,0,0,0" />
                         </ObjectAnimationUsingKeyFrames>
 
                     </Storyboard>
@@ -160,11 +160,10 @@
         <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Right"
                    PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
             <SplitView.Pane>
-                <Grid>
-                    <Border x:Name="Border" Background="{ThemeResource ControlFillColorTransparentBrush}"
-                            Margin="8,8,0,0"
-                            BorderThickness="0" Canvas.ZIndex="1" Padding="0,0,0,0">
-                        <Grid x:Name="PaneGrid" CornerRadius="8,0,0,0">
+                <Grid winUi:UIElementExtensions.ClipToBounds="False" Padding="8,8,8,8">
+                    <Rectangle x:Name="Border" Fill="{ThemeResource ControlFillColorTransparentBrush}"
+                               RadiusX="8" RadiusY="8" />
+                        <Grid x:Name="PaneGrid">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
@@ -230,7 +229,6 @@
                             <TreeView x:Name="FormulationCategoryTree"
                                       Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
                                       Padding="10" Margin="10"
-                                      MinWidth="280"
                                       CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
                                       SelectionMode="Single"
                                       SelectionChanged="TreeView_OnSelectionChanged"
@@ -244,7 +242,7 @@
                                 </TreeView.Resources>
                             </TreeView>
                         </Grid>
-                    </Border>
+                    
                 </Grid>
             </SplitView.Pane>
             <SplitView.Content>
@@ -254,7 +252,7 @@
                                   CornerRadius="4,4,0,0" BorderThickness="0"
                                   Background="{ThemeResource ControlFillColorDefaultBrush}"
                                   winUi:Effects.Shadow="{StaticResource ViewerShadow}"
-                                  Margin="20,8,20,0" Padding="16"
+                                  Margin="20,0,20,0" Padding="16"
                                   Visibility="{x:Bind ViewModel.IsFormulationSelected,Mode=OneWay,Converter={StaticResource BooleanToVisibilityConverter}}">
                         <ScrollViewer.Transitions>
                             <TransitionCollection>

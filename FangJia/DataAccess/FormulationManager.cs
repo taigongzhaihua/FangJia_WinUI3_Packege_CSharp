@@ -1,5 +1,4 @@
 ﻿using FangJia.Common;
-using FangJia.Helpers;
 using Microsoft.Data.Sqlite;
 using NLog;
 using System;
@@ -10,14 +9,10 @@ using System.Threading.Tasks;
 
 namespace FangJia.DataAccess;
 
-public partial class FormulationManager : IDisposable
+public class FormulationManager
 {
-    private static readonly string DatabasePath = AppHelper.GetFilePath("Data.db");
-    private readonly string _connectionString = $"Data Source={DatabasePath};";
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    // 连接池
-    private readonly SqliteConnectionPool _connectionPool;
 
     // 常用的SQL查询语句，减少字符串拼接开销
     private static class SqlQueries
@@ -63,19 +58,14 @@ public partial class FormulationManager : IDisposable
                                              """;
     }
 
-    public FormulationManager(int poolSize = 10)
-    {
-        // 创建连接池，设置合适的大小
-        _connectionPool = new SqliteConnectionPool(_connectionString, poolSize);
-    }
 
     /// <summary>
     /// 获取所有大类（FirstCategory）
     /// </summary>
-    public async IAsyncEnumerable<FormulationCategory> GetFirstCategoriesAsync(
+    public static async IAsyncEnumerable<FormulationCategory> GetFirstCategoriesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+        await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
         var connection = pooledConnection.Connection;
 
         await using var command = new SqliteCommand(SqlQueries.GetFirstCategories, connection);
@@ -92,10 +82,10 @@ public partial class FormulationManager : IDisposable
     /// <summary>
     /// 获取所有子类（SecondCategory）
     /// </summary>
-    public async IAsyncEnumerable<FormulationCategory> GetSecondCategoriesAsync(string firstCategory,
+    public static async IAsyncEnumerable<FormulationCategory> GetSecondCategoriesAsync(string firstCategory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+        await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
         var connection = pooledConnection.Connection;
 
         await using var command = new SqliteCommand(SqlQueries.GetSecondCategories, connection);
@@ -111,10 +101,10 @@ public partial class FormulationManager : IDisposable
     /// <summary>
     /// 获取所有方剂（Formulation）
     /// </summary>
-    public async IAsyncEnumerable<FormulationCategory> GetFormulationsAsync(int categoryId,
+    public static async IAsyncEnumerable<FormulationCategory> GetFormulationsAsync(int categoryId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+        await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
         var connection = pooledConnection.Connection;
 
         await using var command = new SqliteCommand(SqlQueries.GetFormulations, connection);
@@ -127,12 +117,12 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task<Formulation?> GetFormulationByIdAsync(int formulationId,
+    public static async Task<Formulation?> GetFormulationByIdAsync(int formulationId,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.GetFormulationById, connection);
@@ -173,11 +163,11 @@ public partial class FormulationManager : IDisposable
     /// <param name="formulationId">方剂ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>异步迭代器，流式返回 FormulationComposition 对象</returns>
-    public async IAsyncEnumerable<FormulationComposition> GetFormulationCompositionsAsync(
+    public static async IAsyncEnumerable<FormulationComposition> GetFormulationCompositionsAsync(
         int formulationId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+        await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
         var connection = pooledConnection.Connection;
 
         await using var command = new SqliteCommand(SqlQueries.GetFormulationCompositions, connection);
@@ -205,12 +195,12 @@ public partial class FormulationManager : IDisposable
     /// <param name="formulationId">方剂ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>FormulationImage类</returns>
-    public async Task<FormulationImage?> GetFormulationImageAsync(int formulationId,
+    public static async Task<FormulationImage?> GetFormulationImageAsync(int formulationId,
     CancellationToken cancellationToken = default)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync(cancellationToken);
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.GetFormulationImage, connection);
@@ -235,14 +225,14 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task UpdateFormulationAsync(int formulationId, params (string key, string value)[]? tuples)
+    public static async Task UpdateFormulationAsync(int formulationId, params (string key, string value)[]? tuples)
     {
         if (tuples == null || tuples.Length == 0)
             return;
 
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             // 开启事务以提高多个更新的性能
@@ -283,11 +273,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task<int> InsertFormulationComposition(FormulationComposition composition)
+    public static async Task<int> InsertFormulationComposition(FormulationComposition composition)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.InsertFormulationComposition, connection);
@@ -308,11 +298,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task DeleteFormulationComposition(int compositionId)
+    public static async Task DeleteFormulationComposition(int compositionId)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.DeleteFormulationComposition, connection);
@@ -326,13 +316,13 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task UpdateFormulationComposition(int id, params (string key, string? value)[]? tuples)
+    public static async Task UpdateFormulationComposition(int id, params (string key, string? value)[]? tuples)
     {
         if (tuples == null || tuples.Length == 0) return;
 
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var transaction = connection.BeginTransaction();
@@ -370,11 +360,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task DeleteCategory(int id)
+    public static async Task DeleteCategory(int id)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.DeleteCategory, connection);
@@ -388,11 +378,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task DeleteFormulation(int id)
+    public static async Task DeleteFormulation(int id)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.DeleteFormulation, connection);
@@ -406,11 +396,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task<int> InsertFormulationAsync(Formulation formulation)
+    public static async Task<int> InsertFormulationAsync(Formulation formulation)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.InsertFormulation, connection);
@@ -436,11 +426,11 @@ public partial class FormulationManager : IDisposable
         }
     }
 
-    public async Task<int> InsertCategoryAsync(string firstCategory, string secondCategory)
+    public static async Task<int> InsertCategoryAsync(string firstCategory, string secondCategory)
     {
         try
         {
-            await using var pooledConnection = await _connectionPool.GetConnectionAsync();
+            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
             var connection = pooledConnection.Connection;
 
             await using var command = new SqliteCommand(SqlQueries.InsertCategory, connection);
@@ -455,19 +445,5 @@ public partial class FormulationManager : IDisposable
             Logger.Error(e, "插入分类失败: {Message}", e.Message);
             throw;
         }
-    }
-
-    /// <summary>
-    /// 清理连接池中的空闲连接
-    /// </summary>
-    public Task CleanIdleConnectionsAsync(CancellationToken cancellationToken = default)
-    {
-        return _connectionPool.CleanIdleConnectionsAsync(cancellationToken);
-    }
-
-    public void Dispose()
-    {
-        _connectionPool.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

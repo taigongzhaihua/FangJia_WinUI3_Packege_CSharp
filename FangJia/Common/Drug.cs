@@ -9,15 +9,8 @@
 //------------------------------------------------------------------------
 
 using CommunityToolkit.Mvvm.ComponentModel;
-using System.Collections.ObjectModel;
 
 namespace FangJia.Common;
-
-public partial class DrugGroup : ObservableObject
-{
-    public string? Category { get; set; } // 分类
-    public ObservableCollection<DrugSummary> Drugs { get; set; } = []; // 药物列表
-}
 
 public class DrugSummary
 {
@@ -26,23 +19,21 @@ public class DrugSummary
     public string? Category { get; set; }
 }
 
-public class Drug : DrugSummary
+[ObservableObject]
+public partial class Drug : DrugSummary
 {
-    public int Id { get; set; } // 药物ID
-    public string? Name { get; set; } // 药物名称
-    public string? EnglishName { get; set; } // 英文名称
-    public string? LatinName { get; set; } // 拉丁名称
-    public string? Category { get; set; } // 分类
-    public string? Origin { get; set; } // 产地
-    public string? Properties { get; set; } // 性状
-    public string? Quality { get; set; } // 品质
-    public string? Taste { get; set; } // 性味
-    public string? Meridian { get; set; } // 归经
-    public string? Effect { get; set; } // 药物功效
-    public string? Notes { get; set; } // 备注
-    public string? Processed { get; set; } // 炮制品类
-    public string? Source { get; set; } // 来源
-    public DrugImage DrugImage { get; set; } = new();
+    [ObservableProperty] public partial string? EnglishName { get; set; } // 英文名称
+    [ObservableProperty] public partial string? LatinName { get; set; } // 拉丁名称
+    [ObservableProperty] public partial string? Origin { get; set; } // 产地
+    [ObservableProperty] public partial string? Properties { get; set; } // 性状
+    [ObservableProperty] public partial string? Quality { get; set; } // 品质
+    [ObservableProperty] public partial string? Taste { get; set; } // 性味
+    [ObservableProperty] public partial string? Meridian { get; set; } // 归经
+    [ObservableProperty] public partial string? Effect { get; set; } // 药物功效
+    [ObservableProperty] public partial string? Notes { get; set; } // 备注
+    [ObservableProperty] public partial string? Processed { get; set; } // 炮制品类
+    [ObservableProperty] public partial string? Source { get; set; } // 来源
+    [ObservableProperty] public partial DrugImage DrugImage { get; set; } = new();
 }
 
 public class DrugImage

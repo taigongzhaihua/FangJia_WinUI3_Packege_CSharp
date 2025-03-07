@@ -11,15 +11,19 @@
 using FangJia.Helpers;
 using Microsoft.Data.Sqlite;
 using NLog;
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FangJia.DataAccess;
 
-internal class DataManager
+internal partial class DataManager : IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private static readonly string DatabasePath = AppHelper.GetFilePath("Data.db");
     private static readonly string ConnectionString = $"Data Source={DatabasePath};";
+    public static readonly SqliteConnectionPool Pool = new(ConnectionString, 20);
 
     /// <summary>
     /// 初始化数据库，并创建表（如果不存在）
@@ -30,14 +34,14 @@ internal class DataManager
         // 检查文件是否存在
         if (!File.Exists(DatabasePath))
         {
-            Logger.Info($"未找到数据库文件。正在创建新数据库文件和表...");
+            Logger.Info("未找到数据库文件。正在创建新数据库文件和表...");
             // 创建数据库文件并初始化表
             CreateDatabaseAndTable(DatabasePath);
             Logger.Info("数据库文件和表创建成功。");
         }
         else
         {
-            Logger.Info($"数据库文件已存在。");
+            Logger.Info("数据库文件已存在。");
         }
     }
 
@@ -45,7 +49,8 @@ internal class DataManager
     {
         // SQLite 连接字符串
         _ = Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? string.Empty);
-        using var connection = new SqliteConnection(ConnectionString);
+        using var poolConnection = Pool.GetConnectionAsync().Result;
+        var connection = poolConnection.Connection;
         connection.Open();
         var command = connection.CreateCommand();
         // 创建表的 SQL 语句
@@ -123,5 +128,27 @@ internal class DataManager
             );
             """;
         command.ExecuteNonQuery();
+    }
+
+    public static async Task<(SqliteCommand command, PooledSqliteConnection pooledConnection)> CreateCommandAsync(string commandText, CancellationToken cancellationToken = default)
+    {
+        var pooledConnection = await Pool.GetConnectionAsync(cancellationToken);
+        var connection = pooledConnection.Connection;
+        var command = connection.CreateCommand();
+        command.CommandText = commandText;
+        return (command, pooledConnection);
+    }
+    /// <summary>
+    /// 清理连接池中的空闲连接
+    /// </summary>
+    public static Task CleanIdleConnectionsAsync(CancellationToken cancellationToken = default)
+    {
+        return Pool.CleanIdleConnectionsAsync(cancellationToken);
+    }
+
+    public void Dispose()
+    {
+        Pool.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
