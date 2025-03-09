@@ -50,7 +50,7 @@ public sealed partial class MainWindow
         AppTitleBar.Loaded += AppTitleBar_Loaded;
         ContentFrame.Navigated += ContentFrame_Navigated;
         _appWindow.Closing += OnClosing;
-        // TrayIcon.Loaded += TrayIcon_Loaded;
+        TrayIcon.Loaded += TrayIcon_Loaded;
 
 
         // 2. 扩展标题栏

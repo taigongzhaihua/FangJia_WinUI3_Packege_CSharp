@@ -14,28 +14,27 @@
 
 using System.Runtime.InteropServices;
 
-namespace FangJia.Helpers
+namespace FangJia.Helpers;
+
+internal partial class NativeHelper
 {
-    internal partial class NativeHelper
+    public const int ErrorSuccess = 0;
+    public const int ErrorInsufficientBuffer = 122;
+    public const int AppmodelErrorNoPackage = 15700;
+
+    [LibraryImport("api-ms-win-appmodel-runtime-l1-1-1", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.U4)]
+    internal static partial uint GetCurrentPackageId(ref int pBufferLength, out byte pBuffer);
+
+    public static bool IsAppPackaged
     {
-        public const int ErrorSuccess = 0;
-        public const int ErrorInsufficientBuffer = 122;
-        public const int AppmodelErrorNoPackage = 15700;
-
-        [LibraryImport("api-ms-win-appmodel-runtime-l1-1-1", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.U4)]
-        internal static partial uint GetCurrentPackageId(ref int pBufferLength, out byte pBuffer);
-
-        public static bool IsAppPackaged
+        get
         {
-            get
-            {
-                var bufferSize = 0;
-                var lastError = GetCurrentPackageId(ref bufferSize, out _);
-                var isPackaged = lastError != AppmodelErrorNoPackage;
+            var bufferSize = 0;
+            var lastError = GetCurrentPackageId(ref bufferSize, out _);
+            var isPackaged = lastError != AppmodelErrorNoPackage;
 
-                return isPackaged;
-            }
+            return isPackaged;
         }
     }
 }

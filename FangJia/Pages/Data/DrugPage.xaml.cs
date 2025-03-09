@@ -7,6 +7,7 @@
 // FangJia 仅做学习交流使用
 // 转载请注明出处
 //------------------------------------------------------------------------
+
 using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Media;
 using FangJia.Helpers;
@@ -17,82 +18,79 @@ using Microsoft.UI.Xaml.Controls;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace FangJia.Pages
+namespace FangJia.Pages;
+
+/// <summary>
+/// An empty page that can be used on its own or navigated to within a Frame.
+/// </summary>
+public sealed partial class DrugPage
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class DrugPage : Page
+    internal readonly DrugViewModel ViewModel = Locator.GetService<DrugViewModel>();
+
+
+    public DrugPage()
     {
-        internal readonly DrugViewModel ViewModel = Locator.GetService<DrugViewModel>();
+        InitializeComponent();
+    }
 
-
-        public DrugPage()
+    private void SearchBox_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        if (sender is { Text: { Length: > 0 } text })
         {
-            InitializeComponent();
+            ViewModel.SearchDrugSummaries(text);
         }
-
-        private void SearchBox_OnTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        else
         {
-            if (sender is { Text: { Length: > 0 } text })
-            {
-                ViewModel.SearchDrugSummaries(text);
-            }
-            else
-            {
-                ViewModel.ClearSearch();
-            }
+            ViewModel.ClearSearch();
         }
+    }
 
-        private void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    // 选择建议时
+    private static void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        if (args.SelectedItem is string selectedItem)
         {
-
+            sender.Text = selectedItem;
         }
+    }
 
-        private void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    // 提交查询时
+    private void SearchBox_OnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var query = args.ChosenSuggestion as string ?? args.QueryText;
+        if (string.IsNullOrEmpty(query)) return;
+        ViewModel.SelectDrug(query);
+    }
+
+    private void PaneOpenOrCloseButton_OnClick(object _, RoutedEventArgs _1)
+    {
+        SplitView.IsPaneOpen = !SplitView.IsPaneOpen;
+    }
+
+    private void OnAdaptiveStatesCurrentStateChanged(object sender, VisualStateChangedEventArgs e)
+    {
+        switch (e.NewState.Name)
         {
-
+            case "WideState":
+                Effects.SetShadow(Border, null!);
+                break;
+            case "NarrowState":
+                Effects.SetShadow(Border, new AttachedCardShadow
+                {
+                    Opacity = 0.4,
+                    BlurRadius = 8,
+                    Offset = "1"
+                });
+                break;
         }
+    }
 
-        private void PaneOpenOrCloseButton_OnClick(object _, RoutedEventArgs _1)
+    private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0 && sender is ListView listView)
         {
-            SplitView.IsPaneOpen = !SplitView.IsPaneOpen;
-        }
-
-        private void OnAdaptiveStatesCurrentStateChanged(object sender, VisualStateChangedEventArgs e)
-        {
-            switch (e.NewState.Name)
-            {
-                case "WideState":
-                    Effects.SetShadow(Border, null!);
-                    break;
-                case "NarrowState":
-                    Effects.SetShadow(Border, new AttachedCardShadow
-                    {
-                        Opacity = 0.4,
-                        BlurRadius = 8,
-                        Offset = "1"
-                    });
-                    break;
-            }
-        }
-
-        private void DrugInsertButton_OnClick(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void DrugDeleteButton_OnClick(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void Selector_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems.Count > 0 && sender is ListView listView)
-            {
-                listView.ScrollIntoView(e.AddedItems[0]);
-            }
+            listView.ScrollIntoView(e.AddedItems[0]);
         }
     }
 }

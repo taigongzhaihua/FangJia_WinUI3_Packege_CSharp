@@ -198,7 +198,8 @@
                                             QueryIcon="Find"
                                             TextChanged="SearchBox_OnTextChanged"
                                             SuggestionChosen="SearchBox_OnSuggestionChosen"
-                                            QuerySubmitted="SearchBox_OnQuerySubmitted">
+                                            QuerySubmitted="SearchBox_OnQuerySubmitted"
+                                            ItemsSource="{x:Bind ViewModel.SearchTexts}">
                                 <AutoSuggestBox.KeyboardAccelerators>
                                     <KeyboardAccelerator Key="S" Modifiers="Control" />
                                 </AutoSuggestBox.KeyboardAccelerators>

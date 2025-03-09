@@ -12,14 +12,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace FangJia.Common;
 
-public class DrugSummary
+public partial class DrugSummary : ObservableObject
 {
-    public int Id { get; set; }
-    public string? Name { get; set; }
-    public string? Category { get; set; }
+    [ObservableProperty] public partial int Id { get; set; }
+    [ObservableProperty] public partial string? Name { get; set; }
+    [ObservableProperty] public partial string? Category { get; set; }
 }
 
-[ObservableObject]
 public partial class Drug : DrugSummary
 {
     [ObservableProperty] public partial string? EnglishName { get; set; } // 英文名称

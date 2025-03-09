@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FangJia", "FangJia\FangJia.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TGZH.Control", "TGZH.Control\TGZH.Control.csproj", "{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TGZH.Pinyin", "TGZH.Pinyin\TGZH.Pinyin.csproj", "{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -47,6 +49,18 @@ Global
 		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x64.Build.0 = Release|Any CPU
 		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x86.ActiveCfg = Release|Any CPU
 		{39D77138-44A7-40AC-BD9F-3F3979D0EBF4}.Release|x86.Build.0 = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|x64.Build.0 = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Debug|x86.Build.0 = Debug|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|ARM64.Build.0 = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|x64.ActiveCfg = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|x64.Build.0 = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|x86.ActiveCfg = Release|Any CPU
+		{5A44CF26-025D-4CEA-86D5-B227ECE3DB5C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

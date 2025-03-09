@@ -22,7 +22,7 @@ namespace FangJia.DataAccess;
 
 public class DrugManager
 {
-    private static Logger _logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private static class SqlQueries
     {
         public const string GetDrugSummaryList = "SELECT Id, Name, Category FROM Drug";
@@ -181,7 +181,7 @@ public class DrugManager
         }
         catch (Exception e)
         {
-            _logger.Error($"插入药物错误: {e.Message}", e);
+            Logger.Error($"插入药物错误: {e.Message}", e);
             throw;
         }
     }
@@ -200,7 +200,7 @@ public class DrugManager
 
     public static async Task<bool> UpdateDrugAsync(int id, CancellationToken cancellationToken = default, params (string k, string?)[] tuple)
     {
-        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.UpdateDrug(id, tuple.Select(t => t.k).ToArray()), cancellationToken);
+        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.UpdateDrug(id, [.. tuple.Select(t => t.k)]), cancellationToken);
         await using (pooledConnection) await using (command)
         {
             command.Parameters.AddWithValue("@Id", id);

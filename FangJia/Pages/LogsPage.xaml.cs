@@ -37,7 +37,7 @@ public sealed partial class LogsPage
     private ObservableCollection<LogItem> FilteredLogs { get; } = [];
 
     // 当前用户信息 - 用于高亮显示当前用户相关日志
-    private string _currentUser = "taigongzhaihua"; // 2025-03-05 提供的当前用户
+    private const string CurrentUser = "taigongzhaihua"; // 2025-03-05 提供的当前用户
 
     // 当前UTC时间 - 用于状态栏显示
     private string _currentUtcTime = "2025-03-05 06:36:39"; // 2025-03-05 提供的当前UTC时间
@@ -114,7 +114,7 @@ public sealed partial class LogsPage
                 // 如果有搜索关键词，过滤不匹配的日志
                 if (!string.IsNullOrEmpty(_searchKeyword))
                 {
-                    bool containsKeyword =
+                    var containsKeyword =
                         (log.Message?.Contains(_searchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
                         (log.Logger?.Contains(_searchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
                         (log.Exception?.Contains(_searchKeyword, StringComparison.OrdinalIgnoreCase) ?? false);
@@ -207,17 +207,17 @@ public sealed partial class LogsPage
     private void UpdateStatusBar()
     {
         // 统计各级别日志数量
-        int totalCount = FilteredLogs.Count;
-        int debugCount = FilteredLogs.Count(l => l.Level == "DEBUG");
-        int infoCount = FilteredLogs.Count(l => l.Level == "INFO");
-        int warnCount = FilteredLogs.Count(l => l.Level is "WARN" or "WARNING");
-        int errorCount = FilteredLogs.Count(l => l.Level == "ERROR");
+        var totalCount = FilteredLogs.Count;
+        var debugCount = FilteredLogs.Count(l => l.Level == "DEBUG");
+        var infoCount = FilteredLogs.Count(l => l.Level == "INFO");
+        var warnCount = FilteredLogs.Count(l => l.Level is "WARN" or "WARNING");
+        var errorCount = FilteredLogs.Count(l => l.Level == "ERROR");
 
         // 更新日志计数显示
         LogCountTextBlock.Text = $"总数: {totalCount}  |  DEBUG: {debugCount}  |  INFO: {infoCount}  |  WARN: {warnCount}  |  ERROR: {errorCount}";
 
         // 更新当前用户和时间信息
-        CurrentTimeTextBlock.Text = $"{_currentUtcTime} UTC  |  用户: {_currentUser}";
+        CurrentTimeTextBlock.Text = $"{_currentUtcTime} UTC  |  用户: {CurrentUser}";
     }
 
     /// <summary>
@@ -403,7 +403,7 @@ public sealed partial class LogsPage
             if ("warning".Contains(inputText)) suggestions.Add("warning");
             if ("exception".Contains(inputText)) suggestions.Add("exception");
             if ("failed".Contains(inputText)) suggestions.Add("failed");
-            if (_currentUser.Contains(inputText, StringComparison.CurrentCultureIgnoreCase)) suggestions.Add(_currentUser);
+            if (CurrentUser.Contains(inputText, StringComparison.CurrentCultureIgnoreCase)) suggestions.Add(CurrentUser);
 
             // 更新搜索建议
             sender.ItemsSource = suggestions;
@@ -413,7 +413,7 @@ public sealed partial class LogsPage
     /// <summary>
     /// 复制当前选中日志
     /// </summary>
-    private void CopyLogMenuItem_Click(object sender, RoutedEventArgs e)
+    private void CopyLogMenuItem_Click(object sender, RoutedEventArgs _)
     {
         if (sender is not MenuFlyoutItem { DataContext: LogItem logItem }) return;
         // 创建数据包并复制日志文本到剪贴板
@@ -425,7 +425,7 @@ public sealed partial class LogsPage
     /// <summary>
     /// 清除所有显示的日志
     /// </summary>
-    private void ClearLogsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ClearLogsMenuItem_Click(object _1, RoutedEventArgs _)
     {
         FilteredLogs.Clear();
         UpdateStatusBar();
@@ -434,7 +434,7 @@ public sealed partial class LogsPage
     /// <summary>
     /// 重新加载日志
     /// </summary>
-    private void ReloadLogsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ReloadLogsMenuItem_Click(object _1, RoutedEventArgs _)
     {
         Task.Run(LoadLogsAsync);
     }

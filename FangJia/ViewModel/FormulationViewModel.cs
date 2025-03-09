@@ -86,9 +86,9 @@ public partial class FormulationViewModel : ObservableObject
                 _logger.Debug("清空现有数据并设置加载状态");
             });
 
-            int categoryCount = 0;
-            int secondCategoryCount = 0;
-            int formulationCount = 0;
+            var categoryCount = 0;
+            var secondCategoryCount = 0;
+            var formulationCount = 0;
 
             // 加载一级分类
             _logger.Debug("开始加载一级分类");
@@ -216,7 +216,7 @@ public partial class FormulationViewModel : ObservableObject
                 // 清空现有组成
                 SelectedFormulation.Compositions?.Clear();
 
-                int compositionCount = 0;
+                var compositionCount = 0;
                 // 重新加载组成
                 await foreach (var composition in FormulationManager.GetFormulationCompositionsAsync(value.Id))
                 {
@@ -389,7 +389,7 @@ public partial class FormulationViewModel : ObservableObject
             FormulationCategory? target = null;
 
             // 查找要移动的方剂和它当前的分类
-            bool found = false;
+            var found = false;
             foreach (var category in Categories)
             {
                 var categoryRef = category;

@@ -14,19 +14,17 @@
 		<LangVersion>preview</LangVersion>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<NoWarn>
-			0108;   <!-- 'x' hides inherited member 'y'. Use the new keyword if hiding was intended. -->
-			8305;    <!-- 'x' is for evaluation purposes only and is subject to change or removal in future updates. -->
+			0108; <!-- 'x' hides inherited member 'y'. Use the new keyword if hiding was intended. -->
+			8305; <!-- 'x' is for evaluation purposes only and is subject to change or removal in future updates. -->
 			NU1701;
 			IDE0079;
 			NU1702;
 			CA1416;
-			
-			
-
 		</NoWarn>
 		<MSBuildWarningsAsMessages>
 			WMC9997;WMC1510;WMC1501;MSB3277
-			<!-- x is for evaluation purposes only and is subject to change or removal in future updates. --></MSBuildWarningsAsMessages>
+			<!-- x is for evaluation purposes only and is subject to change or removal in future updates. -->
+		</MSBuildWarningsAsMessages>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
 	</PropertyGroup>
 	<ItemGroup>
@@ -66,15 +64,9 @@
 		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
 		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
 	</ItemGroup>
-
 	<ItemGroup>
 		<Manifest Include="$(ApplicationManifest)" />
 	</ItemGroup>
-	<!--
-    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-    Tools extension to be activated for this project even if the Windows App SDK Nuget
-    package has not yet been restored.
-  -->
 	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
@@ -82,8 +74,8 @@
 		<PackageReference Include="Autofac" Version="8.2.0" />
 		<PackageReference Include="Autofac.Extras.NLog" Version="4.0.2" />
 		<PackageReference Include="CommunityToolkit.Common" Version="8.4.0" />
-		<PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.DataTable" Version="0.1.250226-build.2050" />
-		<PackageReference Include="CommunityToolkit.Labs.WinUI.Shimmer" Version="0.1.250226-build.2050" />
+		<PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.DataTable" Version="0.1.250305-build.2058" />
+		<PackageReference Include="CommunityToolkit.Labs.WinUI.Shimmer" Version="0.1.250305-build.2058" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Behaviors" Version="8.2.250129-preview2" />
@@ -98,14 +90,15 @@
 		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.250129-preview2" />
 		<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
-		<PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
-		<PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
+		<PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
+		<PackageReference Include="JetBrains.Annotations" Version="2025.1.0-eap1" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0-preview.1.25081.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.0-preview.1.25081.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0-preview.1.25080.5" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3116-prerelease" />
 		<PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250127003-experimental3" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250208002-preview1" />
 		<PackageReference Include="NLog" Version="5.4.0" />
 		<PackageReference Include="NLog.Database" Version="5.4.0" />
 		<PackageReference Include="NLog.Extensions.Logging" Version="5.4.0" />
@@ -122,6 +115,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\TGZH.Control\TGZH.Control.csproj" />
+		<ProjectReference Include="..\TGZH.Pinyin\TGZH.Pinyin.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Update="Properties\Resource.resx">
@@ -129,9 +123,9 @@
 		</EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
-	  <Page Update="Style\DataGridStyles.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
+		<Page Update="Style\DataGridStyles.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
 	</ItemGroup>
 	<ItemGroup>
 		<Page Update="Pages\LogsPage.xaml">
@@ -188,15 +182,9 @@
 		<WebView2LoaderPreference>Static</WebView2LoaderPreference>
 		<WV2WinRTVerbosity>normal</WV2WinRTVerbosity>
 	</PropertyGroup>
-	<!--
-    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-    Explorer "Package and Publish" context menu entry to be enabled for this project even if
-    the Windows App SDK Nuget package has not yet been restored.
-  -->
 	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
 		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
 	</PropertyGroup>
-	<!-- Publish Properties -->
 	<PropertyGroup>
 		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
 		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
