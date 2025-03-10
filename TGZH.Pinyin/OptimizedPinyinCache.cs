@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace TGZH.Pinyin;
@@ -112,14 +113,15 @@ internal class LruCache<TKey, TValue>(int capacity) where TKey : notnull
     /// </summary>
     private class CacheItem
     {
-        public TKey Key { get; set; }
-        public TValue Value { get; set; }
+        public TKey Key { get; init; }
+        public TValue Value { get; init; }
     }
 }
 
 /// <summary>
 /// 拼音缓存管理类
 /// </summary>
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
 internal class PinyinCacheManager
 {
     // 汉字拼音缓存
