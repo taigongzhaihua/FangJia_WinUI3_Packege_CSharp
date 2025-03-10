@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -179,6 +180,8 @@ internal class PinyinManager
             i++;
         }
     }
+
+
     // 在PinyinManager类中添加以下批量处理方法
     public async Task<string[]> GetTextPinyinBatchAsync(string text, PinyinFormat format, string separator = " ")
     {
@@ -211,6 +214,122 @@ internal class PinyinManager
 
         // 连接结果
         return result;
+    }
+
+    /// <summary>
+    /// 批量获取多个文本的拼音
+    /// </summary>
+    public async Task<Dictionary<string, string>> GetTextPinyinBatchAsync(
+        string[] texts, PinyinFormat format, string separator)
+    {
+        if (texts == null || texts.Length == 0)
+            return new Dictionary<string, string>();
+
+        var result = new Dictionary<string, string>();
+
+        // 使用并行处理提高性能
+        var options = new ParallelOptions { MaxDegreeOfParallelism = _options.MaxParallelism };
+        var concurrentResults = new ConcurrentDictionary<string, string>();
+
+        await Parallel.ForEachAsync(texts, options, async (text, _) =>
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                concurrentResults.TryAdd(text, string.Empty);
+                return;
+            }
+
+            var pinyin = await ProcessTextBatchAsync(text, format, separator);
+            concurrentResults.TryAdd(text, pinyin);
+        });
+
+        foreach (var pair in concurrentResults)
+        {
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 批量获取多个文本的拼音（同步方法）
+    /// </summary>
+    public Dictionary<string, string> GetTextPinyinBatchSync(string[] texts, PinyinFormat format, string separator)
+    {
+        if (texts == null || texts.Length == 0)
+            return new Dictionary<string, string>();
+
+        var result = new Dictionary<string, string>();
+
+        foreach (var text in texts)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                result[text] = string.Empty;
+                continue;
+            }
+
+            result[text] = GetTextPinyinSync(text, format, separator);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 流式处理多个文本的拼音，逐个返回结果
+    /// </summary>
+    public async IAsyncEnumerable<KeyValuePair<string, string>> GetTextPinyinStreamingAsync(
+        IEnumerable<string> texts,
+        PinyinFormat format,
+        string separator)
+    {
+        // 预先收集文本并分析常用字符
+        var textList = texts.ToList();
+
+        if (textList.Count > 0)
+        {
+            await PreloadCommonCharsFromTexts(textList, format);
+        }
+
+        foreach (var text in textList)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                yield return new KeyValuePair<string, string>(text, string.Empty);
+                continue;
+            }
+
+            var pinyin = await ProcessTextBatchAsync(text, format, separator);
+            yield return new KeyValuePair<string, string>(text, pinyin);
+        }
+    }
+
+    /// <summary>
+    /// 流式处理单个大文本，分块返回结果
+    /// </summary>
+    public async IAsyncEnumerable<string> GetTextChunkStreamingAsync(
+        string text,
+        PinyinFormat format,
+        string separator,
+        int chunkSize)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            yield return string.Empty;
+            yield break;
+        }
+
+        // 预热：提前分析并加载常见字符到缓存
+        await PreloadCommonCharsFromText(text, format);
+
+        for (var i = 0; i < text.Length; i += chunkSize)
+        {
+            int length = Math.Min(chunkSize, text.Length - i);
+            var chunk = text.Substring(i, length);
+
+            var pinyin = await ProcessTextBatchAsync(chunk, format, separator);
+            yield return pinyin;
+        }
     }
 
     // 高效批量处理文本
@@ -366,5 +485,49 @@ internal class PinyinManager
         };
 
         return result;
+    }
+
+    /// <summary>
+    /// 从文本集合中预加载常用字符
+    /// </summary>
+    private async Task PreloadCommonCharsFromTexts(List<string> texts, PinyinFormat format)
+    {
+        var uniqueChars = new HashSet<char>();
+        foreach (var text in texts)
+        {
+            if (string.IsNullOrEmpty(text)) continue;
+
+            foreach (var c in text)
+            {
+                if (PinyinHelper.IsChinese(c))
+                {
+                    uniqueChars.Add(c);
+                }
+            }
+        }
+
+        if (uniqueChars.Count > 0)
+        {
+            await _database.GetCharsPinyinBatchAsync(uniqueChars.ToArray(), format);
+        }
+    }
+
+    /// <summary>
+    /// 从单个文本预加载常用字符
+    /// </summary>
+    private async Task PreloadCommonCharsFromText(string text, PinyinFormat format)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+
+        var uniqueChars = new HashSet<char>();
+        foreach (var c in text.Where(PinyinHelper.IsChinese))
+        {
+            uniqueChars.Add(c);
+        }
+
+        if (uniqueChars.Count > 0)
+        {
+            await _database.GetCharsPinyinBatchAsync(uniqueChars.ToArray(), format);
+        }
     }
 }

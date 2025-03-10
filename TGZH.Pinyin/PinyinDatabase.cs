@@ -637,36 +637,58 @@ internal partial class PinyinDatabase(string dbPath = null) : IDisposable
     }
 
     /// <summary>
-    /// 批量获取文本中全部汉字的拼音
+    /// 批量获取多个文本中汉字的拼音
     /// </summary>
-    /// <param name="text">要查询的文本</param>
-    /// <param name="format">拼音格式</param>
-    /// <returns>每个字的拼音数组</returns>
-    public async Task<string[][]> GetTextCharPinyinBatchAsync(string text, PinyinFormat format)
+    public async Task<Dictionary<string, string[][]>> GetTextsCharPinyinBatchAsync(string[] texts, PinyinFormat format)
     {
-        if (string.IsNullOrEmpty(text))
-            return [];
+        if (texts == null || texts.Length == 0)
+            return new Dictionary<string, string[][]>();
 
-        // 提取文本中唯一的字符
-        var uniqueChars = text.Distinct().ToArray();
+        var result = new Dictionary<string, string[][]>();
 
-        // 批量获取拼音
-        var pinyinDict = await GetCharsPinyinBatchAsync(uniqueChars, format);
-
-        // 按原文顺序构建结果
-        var result = new string[text.Length][];
-        for (var i = 0; i < text.Length; i++)
+        // 提取所有文本中的唯一字符，减少数据库查询
+        var allUniqueChars = new HashSet<char>();
+        foreach (var text in texts)
         {
-            var c = text[i];
-            if (pinyinDict.TryGetValue(c, out var pinyin))
+            if (!string.IsNullOrEmpty(text))
             {
-                result[i] = pinyin;
+                foreach (var c in text)
+                {
+                    if (PinyinHelper.IsChinese(c))
+                    {
+                        allUniqueChars.Add(c);
+                    }
+                }
             }
-            else
+        }
+
+        // 一次性批量查询所有唯一字符的拼音
+        var allPinyinDict = await GetCharsPinyinBatchAsync(allUniqueChars.ToArray(), format);
+
+        // 为每个文本构建结果
+        foreach (var text in texts)
+        {
+            if (string.IsNullOrEmpty(text))
             {
-                // 不应该发生，但以防万一
-                result[i] = [c.ToString()];
+                result[text!] = [];
+                continue;
             }
+
+            var textResult = new string[text.Length][];
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (allPinyinDict.TryGetValue(c, out var pinyin))
+                {
+                    textResult[i] = pinyin;
+                }
+                else
+                {
+                    textResult[i] = [c.ToString()];
+                }
+            }
+
+            result[text] = textResult;
         }
 
         return result;
@@ -816,6 +838,120 @@ internal partial class PinyinDatabase(string dbPath = null) : IDisposable
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 流式批量获取字符拼音
+    /// </summary>
+    /// <param name="chars">要查询的汉字集合</param>
+    /// <param name="format">拼音格式</param>
+    /// <returns>异步枚举，逐个返回字符及其拼音</returns>
+    public async IAsyncEnumerable<KeyValuePair<char, string[]>> GetCharsPinyinStreamingAsync(
+        IEnumerable<char> chars,
+        PinyinFormat format)
+    {
+        if (!_isInitialized)
+            throw new InvalidOperationException("数据库未初始化。请先调用 InitializeAsync 方法。");
+
+        var processedChars = new HashSet<char>();
+        var charsToQuery = new List<char>();
+
+        // 首先处理可以从缓存获取的字符
+        foreach (var c in chars)
+        {
+            if (_enableCache && TryGetFromCache(c, format, out var cachedPinyin))
+            {
+                processedChars.Add(c);
+                yield return new KeyValuePair<char, string[]>(c, cachedPinyin);
+            }
+            else
+            {
+                charsToQuery.Add(c);
+            }
+        }
+
+        // 如果所有字符都在缓存中找到，直接返回
+        if (charsToQuery.Count == 0)
+            yield break;
+
+        // 构建参数化查询
+        var columnName = format switch
+        {
+            PinyinFormat.WithoutTone => "WithoutTone",
+            PinyinFormat.WithToneNumber => "WithToneNumber",
+            PinyinFormat.FirstLetter => "FirstLetter",
+            _ => "WithToneMark",
+        };
+
+        // 分批处理，每次最多500个参数
+        const int batchSize = 500;
+        for (var i = 0; i < charsToQuery.Count; i += batchSize)
+        {
+            var batch = charsToQuery.Skip(i).Take(batchSize).ToList();
+            var batchProcessedChars = new HashSet<char>();
+
+            // 构建批量查询SQL
+            var sqlBuilder = new StringBuilder();
+            var parameters = new Dictionary<string, object>();
+
+            sqlBuilder.Append($"SELECT Character, {columnName} FROM Characters WHERE Character IN (");
+
+            for (var j = 0; j < batch.Count; j++)
+            {
+                var paramName = $"$p{j}";
+                sqlBuilder.Append(j > 0 ? ", " : "");
+                sqlBuilder.Append(paramName);
+                parameters[paramName] = batch[j].ToString();
+            }
+
+            sqlBuilder.Append(')');
+
+            // 执行批量查询
+            await using var cmd = _connection.CreateCommand();
+            cmd.CommandText = sqlBuilder.ToString();
+
+            // 添加参数
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value);
+            }
+
+            // 执行查询并处理结果
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var charStr = reader.GetString(0);
+                var pinyin = reader.GetString(1).Split(',');
+
+                if (charStr.Length != 1) continue;
+
+                var c = charStr[0];
+                batchProcessedChars.Add(c);
+                processedChars.Add(c);
+
+                // 添加到缓存
+                if (_enableCache)
+                {
+                    AddToCache(c, format, pinyin);
+                }
+
+                yield return new KeyValuePair<char, string[]>(c, pinyin);
+            }
+
+            // 处理未找到拼音的字符
+            foreach (var c in batch.Where(c => !batchProcessedChars.Contains(c)))
+            {
+                var defaultPinyin = new[] { c.ToString() };
+
+                // 也缓存未找到的结果
+                if (_enableCache)
+                {
+                    AddToCache(c, format, defaultPinyin);
+                }
+
+                yield return new KeyValuePair<char, string[]>(c, defaultPinyin);
+            }
+        }
     }
     /// <summary>
     /// 添加或更新汉字拼音
@@ -1149,7 +1285,39 @@ internal partial class PinyinDatabase(string dbPath = null) : IDisposable
             Debug.WriteLine($"拼音缓存预热失败: {ex.Message}");
         }
     }
+    /// <summary>
+    /// 批量预热缓存，针对指定文本集合
+    /// </summary>
+    public async Task BatchWarmupCacheAsync(IEnumerable<string> texts, PinyinFormat format)
+    {
+        if (!_enableCache || !_isInitialized)
+            return;
 
+        try
+        {
+            // 提取所有文本中出现的唯一汉字
+            var uniqueChars = new HashSet<char>();
+            foreach (var text in texts)
+            {
+                if (string.IsNullOrEmpty(text)) continue;
+
+                foreach (var c in text.Where(PinyinHelper.IsChinese))
+                {
+                    uniqueChars.Add(c);
+                }
+            }
+
+            // 批量加载这些汉字的拼音
+            var chars = uniqueChars.ToArray();
+            await GetCharsPinyinBatchAsync(chars, format);
+
+            Debug.WriteLine($"批量拼音缓存预热完成，已加载 {chars.Length} 个汉字");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"批量拼音缓存预热失败: {ex.Message}");
+        }
+    }
     /// <summary>
     /// 释放资源
     /// </summary>

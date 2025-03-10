@@ -1,3 +1,5 @@
+using System;
+
 namespace TGZH.Pinyin;
 
 /// <summary>
@@ -55,4 +57,34 @@ public class PinyinLibraryOptions
     /// 数据库更新URL（可选）
     /// </summary>
     public string DataUpdateUrl { get; set; }
+
+    /// <summary>
+    /// 并行处理时的最大线程数，默认为处理器核心数
+    /// </summary>
+    public int MaxParallelism { get; set; } = Environment.ProcessorCount;
+
+    /// <summary>
+    /// 批量查询时单次数据库操作的最大项数
+    /// </summary>
+    public int BatchQuerySize { get; set; } = 500;
+
+    /// <summary>
+    /// 是否对批量查询结果进行额外缓存
+    /// </summary>
+    public bool EnableBatchResultCache { get; set; } = true;
+
+    /// <summary>
+    /// 流式处理时的块大小
+    /// </summary>
+    public int StreamingChunkSize { get; set; } = 100;
+
+    /// <summary>
+    /// 流式处理时是否预加载字符
+    /// </summary>
+    public bool PreloadCharsForStreaming { get; set; } = true;
+
+    /// <summary>
+    /// 流式处理的缓冲区大小
+    /// </summary>
+    public int StreamingBufferSize { get; set; } = 10;
 }

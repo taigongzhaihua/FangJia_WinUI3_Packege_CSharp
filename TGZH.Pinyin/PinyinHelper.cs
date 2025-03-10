@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace TGZH.Pinyin;
@@ -93,6 +94,80 @@ public static class PinyinHelper
     {
         EnsureInitialized();
         return _manager.GetTextPinyinSync(text, PinyinFormat.FirstLetter, separator);
+    }
+
+    /// <summary>
+    /// 批量获取文本拼音（高性能优化版本）
+    /// </summary>
+    public static async Task<Dictionary<string, string>> GetBatchAsync(string[] texts,
+        PinyinFormat format = PinyinFormat.WithToneMark, string separator = " ")
+    {
+        EnsureInitialized();
+        return await _manager.GetTextPinyinBatchAsync(texts, format, separator);
+    }
+
+    /// <summary>
+    /// 批量获取文本的首字母（高性能优化版本）
+    /// </summary>
+    public static async Task<Dictionary<string, string>> GetFirstLettersBatchAsync(string[] texts, string separator = "")
+    {
+        EnsureInitialized();
+        return await _manager.GetTextPinyinBatchAsync(texts, PinyinFormat.FirstLetter, separator);
+    }
+
+    /// <summary>
+    /// 同步方法 - 批量获取文本拼音
+    /// </summary>
+    public static Dictionary<string, string> GetBatch(string[] texts,
+        PinyinFormat format = PinyinFormat.WithToneMark, string separator = " ")
+    {
+        EnsureInitialized();
+        return _manager.GetTextPinyinBatchSync(texts, format, separator);
+    }
+
+    /// <summary>
+    /// 流式获取拼音 - 处理大量文本时可逐步返回结果
+    /// </summary>
+    public static async IAsyncEnumerable<KeyValuePair<string, string>> GetStreamingAsync(
+        IEnumerable<string> texts,
+        PinyinFormat format = PinyinFormat.WithToneMark,
+        string separator = " ")
+    {
+        EnsureInitialized();
+        await foreach (var result in _manager.GetTextPinyinStreamingAsync(texts, format, separator))
+        {
+            yield return result;
+        }
+    }
+
+    /// <summary>
+    /// 流式获取文本首字母 - 处理大量文本时可逐步返回结果
+    /// </summary>
+    public static async IAsyncEnumerable<KeyValuePair<string, string>> GetFirstLettersStreamingAsync(
+        IEnumerable<string> texts,
+        string separator = "")
+    {
+        EnsureInitialized();
+        await foreach (var result in _manager.GetTextPinyinStreamingAsync(texts, PinyinFormat.FirstLetter, separator))
+        {
+            yield return result;
+        }
+    }
+
+    /// <summary>
+    /// 流式处理单个大文本，分段返回结果
+    /// </summary>
+    public static async IAsyncEnumerable<string> GetTextChunkStreamingAsync(
+        string text,
+        PinyinFormat format = PinyinFormat.WithToneMark,
+        string separator = " ",
+        int chunkSize = 100)
+    {
+        EnsureInitialized();
+        await foreach (var chunk in _manager.GetTextChunkStreamingAsync(text, format, separator, chunkSize))
+        {
+            yield return chunk;
+        }
     }
 
     /// <summary>
