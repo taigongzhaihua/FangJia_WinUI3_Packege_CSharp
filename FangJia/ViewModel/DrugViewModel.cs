@@ -69,6 +69,7 @@ public partial class DrugViewModel : ObservableObject
         }
 
         UpdateDrugGroups();
+
     }
 
     private void UpdateDrugGroups()
@@ -99,37 +100,25 @@ public partial class DrugViewModel : ObservableObject
         try
         {
             Logger.Debug("开始构建药品拼音和首字母索引...");
-            await PinyinHelper.InitializeAsync();
+            await UnifiedPinyinApi.InitializeAsync();
 
-            var processedCount = 0;
             var errorCount = 0;
+            // 一次批量获取拼音和首字母，以提高性能
+            var drugNameList = _drugSummaries.Select(ds => ds.Name).ToArray();
+            var pinyinList = await UnifiedPinyinApi.GetWordsPinyinBatchAsync(drugNameList, PinyinFormat.WithoutTone);
+            var initialList = await UnifiedPinyinApi.GetWordsPinyinBatchAsync(drugNameList, PinyinFormat.FirstLetter);
+            // 将拼音列表添加到缓存字典
             foreach (var drug in _drugSummaries)
             {
-                if (drug.Name == null) continue;
-
-                try
-                {
-                    // 预计算并缓存拼音和首字母
-                    _pinyinCache[drug] =
-                        (await PinyinHelper.GetAsync(drug.Name, PinyinFormat.WithoutTone, "")).Replace(" ", "");
-                    _initialCache[drug] = (await PinyinHelper.GetFirstLettersAsync(drug.Name)).Replace(" ", "");
-                    processedCount++;
-
-                    // 每处理100个记录输出一次进度日志
-                    if (processedCount % 100 == 0)
-                    {
-                        Logger.Debug("处理药品进度: {ProcessedCount}/{TotalCount}", processedCount, _drugSummaries.Count);
-                    }
-                }
-                catch (Exception ex)
+                var pinyin = pinyinList[drug.Name!];
+                var initials = initialList[drug.Name!];
+                if (pinyin == null || initials == null)
                 {
                     errorCount++;
-                    Logger.Error(ex, "为药品 '{DrugName}' 创建索引时出错: {ErrorMessage}", drug.Name, ex.Message);
-
-                    // 确保至少有空条目，以避免以后重新计算
-                    _pinyinCache[drug] = string.Empty;
-                    _initialCache[drug] = string.Empty;
+                    continue;
                 }
+                _pinyinCache[drug] = pinyin.Replace(" ", "");
+                _initialCache[drug] = initials.Replace(" ", "");
             }
 
             _indexesBuilt = true;

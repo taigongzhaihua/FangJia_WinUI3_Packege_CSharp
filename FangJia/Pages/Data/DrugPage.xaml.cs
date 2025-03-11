@@ -47,7 +47,7 @@ public sealed partial class DrugPage
     }
 
     // 选择建议时
-    private static void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    private void SearchBox_OnSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         if (args.SelectedItem is string selectedItem)
         {
