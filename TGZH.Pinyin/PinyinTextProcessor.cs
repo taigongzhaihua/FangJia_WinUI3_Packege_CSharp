@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -329,7 +328,7 @@ internal class PinyinTextProcessor(OptimizedPinyinDatabase database)
         }
 
         // 批量查询所有汉字的拼音
-        var charPinyins = await _database.GetCharsPinyinBatchAsync(uniqueChars.ToArray(), format);
+        var charPinyins = await _database.GetCharsPinyinBatchAsync([.. uniqueChars], format);
 
         // 填充结果数组
         for (var i = 0; i < text.Length; i++)

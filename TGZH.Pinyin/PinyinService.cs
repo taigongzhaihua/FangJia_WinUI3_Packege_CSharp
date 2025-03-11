@@ -126,7 +126,7 @@ internal partial class PinyinService : IDisposable
         EnsureInitialized();
 
         if (characters == null || characters.Length == 0)
-            return new Dictionary<char, string[]>();
+            return [];
 
         // 调用优化的数据库批量方法
         return await _database.GetCharsPinyinBatchAsync(characters, format);
@@ -141,7 +141,7 @@ internal partial class PinyinService : IDisposable
         EnsureInitialized();
 
         if (words == null || words.Length == 0)
-            return new Dictionary<string, string>();
+            return [];
 
         // 调用优化的数据库批量方法
         return await _database.GetWordsPinyinBatchAsync(words, format);
