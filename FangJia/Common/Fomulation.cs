@@ -14,7 +14,6 @@ using FangJia.DataAccess;
 using System;
 using System.Collections.ObjectModel;
 using WinRT;
-using static FangJia.Helpers.Locator;
 
 namespace FangJia.Common;
 
@@ -58,7 +57,6 @@ public partial class FormulationComposition : ObservableObject
     [ObservableProperty] public partial string? DrugName { get; set; } // 药物名称
     [ObservableProperty] public partial string? Effect { get; set; } // 方中功效
     [ObservableProperty] public partial string? Notes { get; set; } // 备注
-    private static readonly FormulationManager FormulationManager = GetService<FormulationManager>();
     public override string ToString() => DrugName ?? string.Empty;
     [RelayCommand]
     public void UpdateFormulationComposition(object key) => _ = (key as string) switch

@@ -571,6 +571,9 @@ public sealed partial class FormulationPage
 
     private void CategoryInsertButton_OnClick(object sender, RoutedEventArgs e)
     {
+        ArgumentNullException.ThrowIfNull(sender);
+
+        ArgumentNullException.ThrowIfNull(e);
         // 创建并显示对话框
         var dialog = CreateInsertDialog();
         _ = dialog.ShowAsync();

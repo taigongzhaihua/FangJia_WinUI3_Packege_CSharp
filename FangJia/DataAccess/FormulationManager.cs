@@ -1,16 +1,21 @@
 ﻿using FangJia.Common;
-using Microsoft.Data.Sqlite;
+using FangJia.DataAccess.Sql;
 using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace FangJia.DataAccess;
 
-public class FormulationManager
+/// <summary>
+/// 方剂管理器 - 优化版
+/// 提供方剂数据的访问与管理功能
+/// </summary>
+public static class FormulationManager
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -21,68 +26,6 @@ public class FormulationManager
 
     // 命令超时时间
     private const int CommandTimeoutSeconds = 30;
-
-    // 常用的SQL查询语句
-    private static class SqlQueries
-    {
-        public const string GetFirstCategories = "SELECT DISTINCT FirstCategory FROM Category ORDER BY Id ASC";
-        public const string GetSecondCategories = "SELECT Id, SecondCategory FROM Category WHERE FirstCategory = @FirstCategory ORDER BY Id ASC";
-        public const string GetFormulations = "SELECT Id, Name FROM Formulation WHERE CategoryId = @CategoryId ORDER BY Id ASC";
-        public const string GetFormulationById =
-            """
-            SELECT Id, Name, CategoryId, Usage, Effect, Indication, Disease, 
-            Application, Supplement, Song, Notes, Source FROM Formulation 
-            WHERE Id = @FormulationId
-            """;
-        public const string GetFormulationCompositions = """
-                                                         SELECT
-                                                         fc.Id,
-                                                         fc.FormulationId,
-                                                         fc.DrugID,
-                                                         fc.DrugName,
-                                                         fc.Effect,
-                                                         fc.Position,
-                                                         fc.Notes
-                                                         FROM FormulationComposition fc
-                                                         WHERE fc.FormulationId = @FormulationId
-                                                         """;
-        public const string GetFormulationImage = "SELECT Id, Image FROM FormulationImage WHERE FormulationId = @FormulationId";
-        public const string InsertFormulationComposition = """
-                                                           INSERT INTO FormulationComposition 
-                                                           (FormulationId, DrugId, DrugName, Effect, Position, Notes)
-                                                           VALUES (@FormulationId, @DrugId, @DrugName, @Effect, @Position, @Notes);
-                                                           SELECT last_insert_rowid();
-                                                           """;
-        public const string DeleteFormulationComposition = "DELETE FROM FormulationComposition WHERE Id = @Id";
-        public const string DeleteCategory = "DELETE FROM Category WHERE Id = @Id";
-        public const string DeleteFormulation = "DELETE FROM Formulation WHERE Id = @Id";
-        public const string InsertFormulation = """
-                                                INSERT INTO Formulation 
-                                                (Name, CategoryId, Usage, Effect, Indication, Disease, 
-                                                Application, Supplement, Song, Notes, Source)
-                                                VALUES (@Name, @CategoryId, @Usage, @Effect, @Indication, @Disease, 
-                                                @Application, @Supplement, @Song, @Notes, @Source);
-                                                SELECT last_insert_rowid();
-                                                """;
-        public const string InsertCategory = """
-                                             INSERT INTO Category (FirstCategory, SecondCategory) 
-                                             VALUES (@FirstCategory, @SecondCategory);
-                                             SELECT last_insert_rowid();
-                                             """;
-
-        // 批量操作优化
-        public const string GetAllSecondCategories = """
-                                                     SELECT Id, FirstCategory, SecondCategory 
-                                                     FROM Category 
-                                                     ORDER BY FirstCategory, Id ASC
-                                                     """;
-
-        public const string GetAllFormulationsBasic = """
-                                                      SELECT Id, Name, CategoryId 
-                                                      FROM Formulation 
-                                                      ORDER BY CategoryId, Id ASC
-                                                      """;
-    }
 
     // 缓存键定义
     private static class CacheKeys
@@ -97,6 +40,8 @@ public class FormulationManager
         public static string AllFormulationsBasic => "AllFormulationsBasic";
     }
 
+    #region 缓存管理
+
     // 缓存管理
     private static T? GetOrAddCache<T>(string key, Func<T> valueFactory, bool forceRefresh = false)
     {
@@ -106,8 +51,7 @@ public class FormulationManager
         var newValue = valueFactory();
         Cache[key] = newValue;
         CacheTimestamps[key] = DateTime.Now;
-        return (T)newValue;
-
+        return newValue;
     }
 
     private static async Task<T?> GetOrAddCacheAsync<T>(string key, Func<Task<T>> valueFactory, bool forceRefresh = false)
@@ -120,7 +64,6 @@ public class FormulationManager
         Cache[key] = newValue;
         CacheTimestamps[key] = DateTime.Now;
         return (T)newValue;
-
     }
 
     // 清除特定缓存
@@ -137,6 +80,10 @@ public class FormulationManager
         CacheTimestamps.Clear();
     }
 
+    #endregion
+
+    #region 批量加载方法
+
     /// <summary>
     /// 优化的批量加载方法 - 一次性加载所有分类数据
     /// </summary>
@@ -147,26 +94,22 @@ public class FormulationManager
         return await GetOrAddCacheAsync(cacheKey, async () =>
         {
             var result = new Dictionary<string, List<FormulationCategory>>();
-
-            // 使用连接池中的连接
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-            var connection = pooledConnection.Connection;
-
-            // 获取所有二级分类
             var categories = new List<(int Id, string FirstCategory, string SecondCategory)>();
-            await using (var command = new SqliteCommand(SqlQueries.GetAllSecondCategories, connection))
-            {
-                command.CommandTimeout = CommandTimeoutSeconds;
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
+
+            // 使用优化的 DataManager 执行查询
+            await DataManager.Instance.ExecuteReaderAsync(
+                FormulationQueries.Category.GetAllSecondCategories,
+                reader =>
                 {
                     categories.Add((
                         reader.GetInt32(0),
                         reader.GetString(1),
                         reader.GetString(2)
                     ));
-                }
-            }
+                    return Task.CompletedTask;
+                },
+                cancellationToken: cancellationToken
+            );
 
             // 创建层次结构
             foreach (var (id, firstCategory, secondCategory) in categories)
@@ -193,31 +136,33 @@ public class FormulationManager
         {
             var result = new Dictionary<int, List<FormulationCategory>>();
 
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-            var connection = pooledConnection.Connection;
-
-            await using var command = new SqliteCommand(SqlQueries.GetAllFormulationsBasic, connection);
-            command.CommandTimeout = CommandTimeoutSeconds;
-
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var id = reader.GetInt32(0);
-                var name = reader.GetString(1);
-                var categoryId = reader.GetInt32(2);
-
-                if (!result.TryGetValue(categoryId, out var formulations))
+            await DataManager.Instance.ExecuteReaderAsync(
+                FormulationQueries.Formulation.GetAllFormulationsBasic,
+                reader =>
                 {
-                    formulations = [];
-                    result[categoryId] = formulations;
-                }
+                    var id = reader.GetInt32(0);
+                    var name = reader.GetString(1);
+                    var categoryId = reader.GetInt32(2);
 
-                formulations.Add(new FormulationCategory(id, name, false));
-            }
+                    if (!result.TryGetValue(categoryId, out var formulations))
+                    {
+                        formulations = [];
+                        result[categoryId] = formulations;
+                    }
+
+                    formulations.Add(new FormulationCategory(id, name, false));
+                    return Task.CompletedTask;
+                },
+                cancellationToken: cancellationToken
+            );
 
             return result;
         });
     }
+
+    #endregion
+
+    #region 分类管理
 
     /// <summary>
     /// 获取所有大类（FirstCategory）- 优化的异步流方法
@@ -231,18 +176,17 @@ public class FormulationManager
             {
                 var categories = new List<FormulationCategory>();
 
-                await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                var connection = pooledConnection.Connection;
-
-                await using var command = new SqliteCommand(SqlQueries.GetFirstCategories, connection);
-                command.CommandTimeout = CommandTimeoutSeconds;
-
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                var i = 0;
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    categories.Add(new FormulationCategory(--i, reader.GetString(0), true));
-                }
+                // 使用优化后的 DataManager 接口
+                await DataManager.Instance.ExecuteReaderAsync(
+                    FormulationQueries.Category.GetFirstCategories,
+                    reader =>
+                    {
+                        var i = categories.Count;
+                        categories.Add(new FormulationCategory(--i, reader.GetString(0), true));
+                        return Task.CompletedTask;
+                    },
+                    cancellationToken: cancellationToken
+                );
 
                 return categories;
             });
@@ -267,17 +211,24 @@ public class FormulationManager
             {
                 var categories = new List<FormulationCategory>();
 
-                await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                var connection = pooledConnection.Connection;
-
-                await using var command = new SqliteCommand(SqlQueries.GetSecondCategories, connection);
-                command.Parameters.AddWithValue("@FirstCategory", firstCategory);
-
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
+                var parameters = new List<(string name, object? value)>
                 {
-                    categories.Add(new FormulationCategory(reader.GetInt32(0), reader.GetString(1), true));
-                }
+                    ("@FirstCategory", firstCategory)
+                };
+
+                await DataManager.Instance.ExecuteReaderAsync(
+                    FormulationQueries.Category.GetSecondCategories,
+                    reader =>
+                    {
+                        categories.Add(new FormulationCategory(
+                            reader.GetInt32(0),
+                            reader.GetString(1),
+                            true));
+                        return Task.CompletedTask;
+                    },
+                    parameters,
+                    cancellationToken
+                );
 
                 return categories;
             });
@@ -288,6 +239,75 @@ public class FormulationManager
             yield return category;
         }
     }
+
+    /// <summary>
+    /// 插入分类
+    /// </summary>
+    public static async Task<int> InsertCategoryAsync(string firstCategory, string secondCategory)
+    {
+        try
+        {
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@FirstCategory", firstCategory),
+                ("@SecondCategory", secondCategory)
+            };
+
+            var result = await DataManager.Instance.ExecuteScalarAsync<long>(
+                FormulationQueries.Category.InsertCategory,
+                parameters
+            );
+
+            var id = (int)result;
+
+            // 清除缓存
+            InvalidateCache(CacheKeys.FirstCategories);
+            InvalidateCache(CacheKeys.SecondCategories(firstCategory));
+            InvalidateCache(CacheKeys.AllSecondCategories);
+
+            return id;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "插入分类失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 删除分类
+    /// </summary>
+    public static async Task DeleteCategory(int id)
+    {
+        try
+        {
+            // 获取分类信息用于清除缓存
+            var getInfoParam = new List<(string name, object? value)> { ("@Id", id) };
+            await DataManager.Instance.ExecuteScalarAsync<string>(
+                FormulationQueries.Category.GetCategoryById,
+                getInfoParam
+            );
+
+            // 执行删除
+            var deleteParam = new List<(string name, object? value)> { ("@Id", id) };
+            await DataManager.Instance.ExecuteNonQueryAsync(
+                FormulationQueries.Category.DeleteCategory,
+                deleteParam
+            );
+
+            // 清除相关缓存
+            ClearCache(); // 分类删除会影响层次结构，清除所有缓存
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "删除分类失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region 方剂管理
 
     /// <summary>
     /// 获取所有方剂（Formulation）- 优化的异步流方法
@@ -302,17 +322,24 @@ public class FormulationManager
             {
                 var items = new List<FormulationCategory>();
 
-                await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                var connection = pooledConnection.Connection;
-
-                await using var command = new SqliteCommand(SqlQueries.GetFormulations, connection);
-                command.Parameters.AddWithValue("@CategoryId", categoryId);
-
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
+                var parameters = new List<(string name, object? value)>
                 {
-                    items.Add(new FormulationCategory(reader.GetInt32(0), reader.GetString(1), false));
-                }
+                    ("@CategoryId", categoryId)
+                };
+
+                await DataManager.Instance.ExecuteReaderAsync(
+                    FormulationQueries.Formulation.GetFormulations,
+                    reader =>
+                    {
+                        items.Add(new FormulationCategory(
+                            reader.GetInt32(0),
+                            reader.GetString(1),
+                            false));
+                        return Task.CompletedTask;
+                    },
+                    parameters,
+                    cancellationToken
+                );
 
                 return items;
             });
@@ -333,37 +360,43 @@ public class FormulationManager
     {
         try
         {
-            return await GetOrAddCacheAsync<Formulation?>(
+            return await GetOrAddCacheAsync(
                 CacheKeys.Formulation(formulationId),
                 async () =>
                 {
-                    await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                    var connection = pooledConnection.Connection;
+                    Formulation? formulation = null;
 
-                    await using var command = new SqliteCommand(SqlQueries.GetFormulationById, connection);
-                    command.Parameters.AddWithValue("@FormulationId", formulationId);
-
-                    await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                    if (await reader.ReadAsync(cancellationToken))
+                    var parameters = new List<(string name, object? value)>
                     {
-                        return new Formulation
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            CategoryId = reader.GetInt32(2),
-                            Usage = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-                            Effect = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-                            Indication = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
-                            Disease = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-                            Application = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
-                            Supplement = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
-                            Song = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
-                            Notes = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
-                            Source = reader.IsDBNull(11) ? string.Empty : reader.GetString(11)
-                        };
-                    }
+                        ("@FormulationId", formulationId)
+                    };
 
-                    return null;
+                    await DataManager.Instance.ExecuteReaderAsync(
+                        FormulationQueries.Formulation.GetFormulationById,
+                        reader =>
+                        {
+                            formulation = new Formulation
+                            {
+                                Id = reader.GetInt32(0),
+                                Name = reader.GetString(1),
+                                CategoryId = reader.GetInt32(2),
+                                Usage = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                                Effect = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                                Indication = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                                Disease = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                                Application = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                                Supplement = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+                                Song = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
+                                Notes = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
+                                Source = reader.IsDBNull(11) ? string.Empty : reader.GetString(11)
+                            };
+                            return Task.CompletedTask;
+                        },
+                        parameters,
+                        cancellationToken
+                    );
+
+                    return formulation;
                 });
         }
         catch (Exception e)
@@ -374,390 +407,33 @@ public class FormulationManager
     }
 
     /// <summary>
-    /// 异步流式读取指定方剂的组成数据 - 优化版本
-    /// </summary>
-    public static async IAsyncEnumerable<FormulationComposition> GetFormulationCompositionsAsync(
-        int formulationId,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var compositions = await GetOrAddCacheAsync(
-            CacheKeys.FormulationCompositions(formulationId),
-            async () =>
-            {
-                var items = new List<FormulationComposition>();
-
-                await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                var connection = pooledConnection.Connection;
-
-                await using var command = new SqliteCommand(SqlQueries.GetFormulationCompositions, connection);
-                command.Parameters.AddWithValue("@FormulationId", formulationId);
-
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    items.Add(new FormulationComposition
-                    {
-                        Id = reader.GetInt32(0),
-                        FormulationId = reader.GetInt32(1),
-                        DrugId = reader.GetInt32(2),
-                        DrugName = reader.GetString(3),
-                        Effect = reader.IsDBNull(4) ? null : reader.GetString(4),
-                        Position = reader.IsDBNull(5) ? null : reader.GetString(5),
-                        Notes = reader.IsDBNull(6) ? null : reader.GetString(6)
-                    });
-                }
-
-                return items;
-            });
-
-        if (compositions == null) yield break;
-        foreach (var composition in compositions)
-        {
-            yield return composition;
-        }
-    }
-
-    /// <summary>
-    /// 读取方剂图片 - 使用unsafe代码优化图片数据处理
-    /// </summary>
-    public static async Task<FormulationImage?> GetFormulationImageAsync(
-        int formulationId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await GetOrAddCacheAsync<FormulationImage?>(
-                CacheKeys.FormulationImage(formulationId),
-                async () =>
-                {
-                    await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                    var connection = pooledConnection.Connection;
-
-                    await using var command = new SqliteCommand(SqlQueries.GetFormulationImage, connection);
-                    command.Parameters.AddWithValue("@FormulationId", formulationId);
-
-                    await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                    if (!await reader.ReadAsync(cancellationToken)) return null;
-                    var id = reader.GetInt32(0);
-
-                    // 使用高效的方法获取图片数据
-                    if (reader.IsDBNull(1)) return null;
-                    var blobLength = (int)reader.GetBytes(1, 0, null, 0, 0);
-                    var imageBytes = new byte[blobLength];
-
-                    // 使用unsafe代码直接处理字节数据，避免多余的复制
-                    unsafe
-                    {
-                        fixed (byte* ptrDest = imageBytes)
-                        {
-                            var bytesRead = reader.GetBytes(1, 0, imageBytes, 0, blobLength);
-
-                            // 验证读取的数据量是否正确
-                            if (bytesRead != blobLength)
-                            {
-                                throw new InvalidOperationException($"Expected to read {blobLength} bytes, but got {bytesRead}");
-                            }
-                        }
-                    }
-
-                    return new FormulationImage
-                    {
-                        Id = id,
-                        FormulationId = formulationId,
-                        Image = imageBytes
-                    };
-
-                });
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "获取方剂图片失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// 更新方剂 - 优化的批量更新方法
-    /// </summary>
-    public static async Task UpdateFormulationAsync(int formulationId, params (string key, string value)[]? tuples)
-    {
-        if (tuples == null || tuples.Length == 0)
-            return;
-
-        try
-        {
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
-            var connection = pooledConnection.Connection;
-
-            // 开启事务以提高多个更新的性能
-            await using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                // 构造 UPDATE 语句的 SET 部分
-                var setClauses = new List<string>(tuples.Length);
-                var command = connection.CreateCommand();
-                command.Transaction = transaction;
-                command.Parameters.AddWithValue("@Id", formulationId);
-
-                for (var i = 0; i < tuples.Length; i++)
-                {
-                    var (key, value) = tuples[i];
-                    setClauses.Add($"{key} = @p{i}");
-                    command.Parameters.AddWithValue($"@p{i}", value);
-                }
-
-                command.CommandText = $"UPDATE Formulation SET {string.Join(", ", setClauses)} WHERE Id = @Id";
-                await command.ExecuteNonQueryAsync();
-
-                // 提交事务
-                transaction.Commit();
-
-                // 更新缓存
-                InvalidateCache(CacheKeys.Formulation(formulationId));
-            }
-            catch
-            {
-                // 出现异常回滚事务
-                transaction.Rollback();
-                throw;
-            }
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "更新方剂失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    // 使用ArrayPool优化内存使用的方剂组成插入方法
-    public static async Task<int> InsertFormulationComposition(FormulationComposition composition)
-    {
-        try
-        {
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
-            var connection = pooledConnection.Connection;
-
-            await using var command = new SqliteCommand(SqlQueries.InsertFormulationComposition, connection);
-            command.Parameters.AddWithValue("@FormulationId", composition.FormulationId);
-            command.Parameters.AddWithValue("@DrugId", composition.DrugId);
-            command.Parameters.AddWithValue("@DrugName", composition.DrugName);
-            command.Parameters.AddWithValue("@Effect", composition.Effect == null ? DBNull.Value : composition.Effect);
-            command.Parameters.AddWithValue("@Position", composition.Position == null ? DBNull.Value : composition.Position);
-            command.Parameters.AddWithValue("@Notes", composition.Notes == null ? DBNull.Value : composition.Notes);
-
-            var result = await command.ExecuteScalarAsync();
-            var id = Convert.ToInt32(result);
-
-            // 清除相关缓存
-            InvalidateCache(CacheKeys.FormulationCompositions(composition.FormulationId));
-
-            return id;
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "插入方剂组成失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    public static async Task DeleteFormulationComposition(int compositionId)
-    {
-        try
-        {
-            var formulationId = -1;
-
-            // 先获取FormulationId用于清除缓存
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var getIdCmd = new SqliteCommand(
-                    "SELECT FormulationId FROM FormulationComposition WHERE Id = @Id", connection);
-                getIdCmd.Parameters.AddWithValue("@Id", compositionId);
-                var result = await getIdCmd.ExecuteScalarAsync();
-                if (result != null && result != DBNull.Value)
-                {
-                    formulationId = Convert.ToInt32(result);
-                }
-            }
-
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var command = new SqliteCommand(SqlQueries.DeleteFormulationComposition, connection);
-                command.Parameters.AddWithValue("@Id", compositionId);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            // 清除相关缓存
-            if (formulationId > 0)
-            {
-                InvalidateCache(CacheKeys.FormulationCompositions(formulationId));
-            }
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "删除方剂组成失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    // 优化的方剂组成更新方法
-    public static async Task UpdateFormulationComposition(int id, params (string key, string? value)[]? tuples)
-    {
-        if (tuples == null || tuples.Length == 0) return;
-
-        try
-        {
-            var formulationId = -1;
-
-            // 获取FormulationId用于清除缓存
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var getIdCmd = new SqliteCommand(
-                    "SELECT FormulationId FROM FormulationComposition WHERE Id = @Id", connection);
-                getIdCmd.Parameters.AddWithValue("@Id", id);
-                var result = await getIdCmd.ExecuteScalarAsync();
-                if (result != null && result != DBNull.Value)
-                {
-                    formulationId = Convert.ToInt32(result);
-                }
-            }
-
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var transaction = connection.BeginTransaction();
-
-                try
-                {
-                    var setClauses = new List<string>(tuples.Length);
-                    var command = connection.CreateCommand();
-                    command.Transaction = transaction;
-                    command.Parameters.AddWithValue("@Id", id);
-
-                    for (var i = 0; i < tuples.Length; i++)
-                    {
-                        var (key, value) = tuples[i];
-                        setClauses.Add($"{key} = @p{i}");
-                        command.Parameters.AddWithValue($"@p{i}", value == null ? DBNull.Value : value);
-                    }
-
-                    command.CommandText =
-                        $"UPDATE FormulationComposition SET {string.Join(", ", setClauses)} WHERE Id = @Id";
-                    await command.ExecuteNonQueryAsync();
-
-                    transaction.Commit();
-
-                    // 清除相关缓存
-                    if (formulationId > 0)
-                    {
-                        InvalidateCache(CacheKeys.FormulationCompositions(formulationId));
-                    }
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "更新方剂组成失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    // 分类删除的优化方法
-    public static async Task DeleteCategory(int id)
-    {
-        try
-        {
-            // 获取分类信息用于清除缓存
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var getInfoCmd = new SqliteCommand(
-                    "SELECT FirstCategory FROM Category WHERE Id = @Id", connection);
-                getInfoCmd.Parameters.AddWithValue("@Id", id);
-                var result = await getInfoCmd.ExecuteScalarAsync();
-                if (result != null && result != DBNull.Value)
-                {
-                    _ = Convert.ToString(result);
-                }
-            }
-
-            await using (var pooledConnection = await DataManager.Pool.GetConnectionAsync())
-            {
-                var connection = pooledConnection.Connection;
-                await using var command = new SqliteCommand(SqlQueries.DeleteCategory, connection);
-                command.Parameters.AddWithValue("@Id", id);
-                await command.ExecuteNonQueryAsync();
-            }
-
-            // 清除相关缓存
-            ClearCache(); // 这里需要清除所有缓存，因为分类删除会影响层次结构
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "删除分类失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    public static async Task DeleteFormulation(int id)
-    {
-        try
-        {
-            // 删除前清除相关缓存
-            InvalidateCache(CacheKeys.Formulation(id));
-            InvalidateCache(CacheKeys.FormulationCompositions(id));
-            InvalidateCache(CacheKeys.FormulationImage(id));
-
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
-            var connection = pooledConnection.Connection;
-
-            await using var command = new SqliteCommand(SqlQueries.DeleteFormulation, connection);
-            command.Parameters.AddWithValue("@Id", id);
-            await command.ExecuteNonQueryAsync();
-
-            // 清除分类相关缓存
-            InvalidateCache(CacheKeys.AllFormulationsBasic);
-        }
-        catch (Exception e)
-        {
-            Logger.Error(e, "删除方剂失败: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// 优化的插入方剂方法 - 使用参数复用和批处理
+    /// 插入方剂
     /// </summary>
     public static async Task<int> InsertFormulationAsync(Formulation formulation)
     {
         try
         {
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
-            var connection = pooledConnection.Connection;
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@Name", formulation.Name),
+                ("@CategoryId", formulation.CategoryId),
+                ("@Usage", formulation.Usage as object ?? string.Empty),
+                ("@Effect", formulation.Effect as object ?? string.Empty),
+                ("@Indication", formulation.Indication as object ?? string.Empty),
+                ("@Disease", formulation.Disease as object ?? string.Empty),
+                ("@Application", formulation.Application as object ?? string.Empty),
+                ("@Supplement", formulation.Supplement as object ?? string.Empty),
+                ("@Song", formulation.Song as object ?? string.Empty),
+                ("@Notes", formulation.Notes as object ?? string.Empty),
+                ("@Source", formulation.Source as object ?? string.Empty)
+            };
 
-            await using var command = new SqliteCommand(SqlQueries.InsertFormulation, connection);
-            command.Parameters.AddWithValue("@Name", formulation.Name);
-            command.Parameters.AddWithValue("@CategoryId", formulation.CategoryId);
-            command.Parameters.AddWithValue("@Usage", formulation.Usage ?? string.Empty);
-            command.Parameters.AddWithValue("@Effect", formulation.Effect ?? string.Empty);
-            command.Parameters.AddWithValue("@Indication", formulation.Indication ?? string.Empty);
-            command.Parameters.AddWithValue("@Disease", formulation.Disease ?? string.Empty);
-            command.Parameters.AddWithValue("@Application", formulation.Application ?? string.Empty);
-            command.Parameters.AddWithValue("@Supplement", formulation.Supplement ?? string.Empty);
-            command.Parameters.AddWithValue("@Song", formulation.Song ?? string.Empty);
-            command.Parameters.AddWithValue("@Notes", formulation.Notes ?? string.Empty);
-            command.Parameters.AddWithValue("@Source", formulation.Source ?? string.Empty);
+            var result = await DataManager.Instance.ExecuteScalarAsync<long>(
+                FormulationQueries.Formulation.InsertFormulation,
+                parameters
+            );
 
-            var result = await command.ExecuteScalarAsync();
-            var id = Convert.ToInt32(result);
+            var id = (int)result;
 
             // 清除缓存
             InvalidateCache(CacheKeys.Formulations(formulation.CategoryId));
@@ -772,33 +448,534 @@ public class FormulationManager
         }
     }
 
-    public static async Task<int> InsertCategoryAsync(string firstCategory, string secondCategory)
+    /// <summary>
+    /// 更新方剂 - 优化的批量更新方法
+    /// </summary>
+    public static async Task UpdateFormulationAsync(int formulationId, params (string key, string value)[]? tuples)
+    {
+        if (tuples == null || tuples.Length == 0)
+            return;
+
+        try
+        {
+            // 使用事务执行批量更新
+            await DataManager.Instance.ExecuteInTransactionAsync(async connection =>
+            {
+                await using var command = connection.CreateCommand();
+
+                // 构造 UPDATE 语句的 SET 部分
+                var setClauses = new List<string>(tuples.Length);
+                command.Parameters.AddWithValue("@Id", formulationId);
+
+                for (var i = 0; i < tuples.Length; i++)
+                {
+                    var (key, value) = tuples[i];
+                    setClauses.Add($"{key} = @p{i}");
+                    command.Parameters.AddWithValue($"@p{i}", value);
+                }
+
+                command.CommandText = $"UPDATE Formulation SET {string.Join(", ", setClauses)} WHERE Id = @Id";
+                await command.ExecuteNonQueryAsync();
+            });
+
+            // 更新缓存
+            InvalidateCache(CacheKeys.Formulation(formulationId));
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "更新方剂失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 删除方剂
+    /// </summary>
+    public static async Task DeleteFormulation(int id)
     {
         try
         {
-            await using var pooledConnection = await DataManager.Pool.GetConnectionAsync();
-            var connection = pooledConnection.Connection;
+            // 删除前清除相关缓存
+            InvalidateCache(CacheKeys.Formulation(id));
+            InvalidateCache(CacheKeys.FormulationCompositions(id));
+            InvalidateCache(CacheKeys.FormulationImage(id));
 
-            await using var command = new SqliteCommand(SqlQueries.InsertCategory, connection);
-            command.Parameters.AddWithValue("@FirstCategory", firstCategory);
-            command.Parameters.AddWithValue("@SecondCategory", secondCategory);
+            // 执行删除
+            var deleteParam = new List<(string name, object? value)> { ("@Id", id) };
+            await DataManager.Instance.ExecuteNonQueryAsync(
+                FormulationQueries.Formulation.DeleteFormulation,
+                deleteParam
+            );
 
-            var result = await command.ExecuteScalarAsync();
-            var id = Convert.ToInt32(result);
+            // 清除分类相关缓存
+            InvalidateCache(CacheKeys.AllFormulationsBasic);
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "删除方剂失败: {Message}", e.Message);
+            throw;
+        }
+    }
 
-            // 清除缓存
-            InvalidateCache(CacheKeys.FirstCategories);
-            InvalidateCache(CacheKeys.SecondCategories(firstCategory));
-            InvalidateCache(CacheKeys.AllSecondCategories);
+    #endregion
+
+    #region 方剂组成管理
+
+    /// <summary>
+    /// 异步流式读取指定方剂的组成数据 - 优化版本
+    /// </summary>
+    public static async IAsyncEnumerable<FormulationComposition> GetFormulationCompositionsAsync(
+        int formulationId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var compositions = await GetOrAddCacheAsync(
+            CacheKeys.FormulationCompositions(formulationId),
+            async () =>
+            {
+                var items = new List<FormulationComposition>();
+
+                var parameters = new List<(string name, object? value)>
+                {
+                    ("@FormulationId", formulationId)
+                };
+
+                await DataManager.Instance.ExecuteReaderAsync(
+                    FormulationQueries.Composition.GetFormulationCompositions,
+                    reader =>
+                    {
+                        items.Add(new FormulationComposition
+                        {
+                            Id = reader.GetInt32(0),
+                            FormulationId = reader.GetInt32(1),
+                            DrugId = reader.GetInt32(2),
+                            DrugName = reader.GetString(3),
+                            Effect = reader.IsDBNull(4) ? null : reader.GetString(4),
+                            Position = reader.IsDBNull(5) ? null : reader.GetString(5),
+                            Notes = reader.IsDBNull(6) ? null : reader.GetString(6)
+                        });
+                        return Task.CompletedTask;
+                    },
+                    parameters,
+                    cancellationToken
+                );
+
+                return items;
+            });
+
+        if (compositions == null) yield break;
+        foreach (var composition in compositions)
+        {
+            yield return composition;
+        }
+    }
+
+    /// <summary>
+    /// 方剂组成插入方法
+    /// </summary>
+    public static async Task<int> InsertFormulationComposition(FormulationComposition composition)
+    {
+        try
+        {
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@FormulationId", composition.FormulationId),
+                ("@DrugId", composition.DrugId),
+                ("@DrugName", composition.DrugName),
+                ("@Effect", composition.Effect as object ?? DBNull.Value),
+                ("@Position", composition.Position as object ?? DBNull.Value),
+                ("@Notes", composition.Notes as object ?? DBNull.Value)
+            };
+
+            var result = await DataManager.Instance.ExecuteScalarAsync<long>(
+                FormulationQueries.Composition.InsertFormulationComposition,
+                parameters
+            );
+
+            var id = (int)result;
+
+            // 清除相关缓存
+            InvalidateCache(CacheKeys.FormulationCompositions(composition.FormulationId));
 
             return id;
         }
         catch (Exception e)
         {
-            Logger.Error(e, "插入分类失败: {Message}", e.Message);
+            Logger.Error(e, "插入方剂组成失败: {Message}", e.Message);
             throw;
         }
     }
+
+    /// <summary>
+    /// 删除方剂组成
+    /// </summary>
+    public static async Task DeleteFormulationComposition(int compositionId)
+    {
+        try
+        {
+            // 先获取FormulationId用于清除缓存
+            var getIdParam = new List<(string name, object? value)> { ("@Id", compositionId) };
+            var formulationId = await DataManager.Instance.ExecuteScalarAsync<int>(
+                FormulationQueries.Composition.GetCompositionFormulationId,
+                getIdParam
+            );
+
+            // 执行删除
+            var deleteParam = new List<(string name, object? value)> { ("@Id", compositionId) };
+            await DataManager.Instance.ExecuteNonQueryAsync(
+                FormulationQueries.Composition.DeleteFormulationComposition,
+                deleteParam
+            );
+
+            // 清除相关缓存
+            if (formulationId > 0)
+            {
+                InvalidateCache(CacheKeys.FormulationCompositions(formulationId));
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "删除方剂组成失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 优化的方剂组成更新方法
+    /// </summary>
+    public static async Task UpdateFormulationComposition(int id, params (string key, string? value)[]? tuples)
+    {
+        if (tuples == null || tuples.Length == 0) return;
+
+        try
+        {
+            // 获取FormulationId用于清除缓存
+            var getIdParam = new List<(string name, object? value)> { ("@Id", id) };
+            var formulationId = await DataManager.Instance.ExecuteScalarAsync<int>(
+                FormulationQueries.Composition.GetCompositionFormulationId,
+                getIdParam
+            );
+
+            // 使用事务执行批量更新
+            await DataManager.Instance.ExecuteInTransactionAsync(async connection =>
+            {
+                await using var command = connection.CreateCommand();
+
+                var setClauses = new List<string>(tuples.Length);
+                command.Parameters.AddWithValue("@Id", id);
+
+                for (var i = 0; i < tuples.Length; i++)
+                {
+                    var (key, value) = tuples[i];
+                    setClauses.Add($"{key} = @p{i}");
+                    command.Parameters.AddWithValue($"@p{i}", value as object ?? DBNull.Value);
+                }
+
+                command.CommandText = $"UPDATE FormulationComposition SET {string.Join(", ", setClauses)} WHERE Id = @Id";
+                await command.ExecuteNonQueryAsync();
+            });
+
+            // 清除相关缓存
+            if (formulationId > 0)
+            {
+                InvalidateCache(CacheKeys.FormulationCompositions(formulationId));
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "更新方剂组成失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region 方剂图片管理
+
+    /// <summary>
+    /// 读取方剂图片 - 使用unsafe代码优化性能
+    /// </summary>
+    public static async Task<FormulationImage?> GetFormulationImageAsync(
+        int formulationId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await GetOrAddCacheAsync(
+                CacheKeys.FormulationImage(formulationId),
+                async () =>
+                {
+                    FormulationImage? formulationImage = null;
+
+                    var parameters = new List<(string name, object? value)>
+                    {
+                        ("@FormulationId", formulationId)
+                    };
+
+                    await DataManager.Instance.ExecuteReaderAsync(
+                        FormulationQueries.Image.GetFormulationImage,
+                        reader =>
+                        {
+                            var id = reader.GetInt32(0);
+                            byte[]? imageBytes = null;
+
+                            // 使用高效的方法获取图片数据
+                            if (!reader.IsDBNull(1))
+                            {
+                                var blobLength = (int)reader.GetBytes(1, 0, null, 0, 0);
+                                imageBytes = new byte[blobLength];
+
+                                // 使用unsafe代码直接处理字节数据，避免多余的复制
+                                unsafe
+                                {
+                                    fixed (byte* ptrDest = imageBytes)
+                                    {
+                                        var bytesRead = reader.GetBytes(1, 0, imageBytes, 0, blobLength);
+
+                                        // 验证读取的数据量是否正确
+                                        if (bytesRead != blobLength)
+                                        {
+                                            throw new InvalidOperationException($"Expected to read {blobLength} bytes, but got {bytesRead}");
+                                        }
+                                    }
+                                }
+                            }
+
+                            formulationImage = new FormulationImage
+                            {
+                                Id = id,
+                                FormulationId = formulationId,
+                                Image = imageBytes
+                            };
+
+                            return Task.CompletedTask;
+                        },
+                        parameters,
+                        cancellationToken
+                    );
+
+                    return formulationImage;
+                });
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "获取方剂图片失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 插入方剂图片 - 高性能版本
+    /// </summary>
+    public static async Task<int> InsertFormulationImageAsync(int formulationId, byte[]? imageData)
+    {
+        try
+        {
+            // 先检查是否已存在图片
+            var existingImageId = await DataManager.Instance.ExecuteScalarAsync<int?>(
+                FormulationQueries.Image.CheckImageExists,
+                [("@FormulationId", formulationId)]
+            );
+
+            if (existingImageId.HasValue)
+            {
+                // 如果已存在，则更新
+                await DataManager.Instance.ExecuteNonQueryAsync(
+                    FormulationQueries.Image.UpdateFormulationImage,
+                    [
+                        ("@FormulationId", formulationId),
+                        ("@Image", imageData == null ? DBNull.Value : imageData)
+                    ]
+                );
+
+                // 清除缓存
+                InvalidateCache(CacheKeys.FormulationImage(formulationId));
+
+                return existingImageId.Value;
+            }
+
+            // 如果不存在，则插入新记录
+            var result = await DataManager.Instance.ExecuteScalarAsync<long>(
+                FormulationQueries.Image.InsertFormulationImage,
+                [
+                    ("@FormulationId", formulationId),
+                    ("@Image", imageData == null ? DBNull.Value : imageData)
+                ]
+            );
+
+            var id = (int)result;
+
+            // 清除缓存
+            InvalidateCache(CacheKeys.FormulationImage(formulationId));
+
+            return id;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "插入或更新方剂图片失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 删除方剂图片
+    /// </summary>
+    public static async Task<bool> DeleteFormulationImageAsync(int formulationId)
+    {
+        try
+        {
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@FormulationId", formulationId)
+            };
+
+            var rowsAffected = await DataManager.Instance.ExecuteNonQueryAsync(
+                FormulationQueries.Image.DeleteFormulationImage,
+                parameters
+            );
+
+            // 清除缓存
+            InvalidateCache(CacheKeys.FormulationImage(formulationId));
+
+            return rowsAffected > 0;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "删除方剂图片失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 高性能批量加载图片方法
+    /// </summary>
+    public static async Task<Dictionary<int, byte[]?>> LoadImagesAsync(IEnumerable<int> formulationIds, CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<int, byte[]?>();
+
+        foreach (var id in formulationIds)
+        {
+            // 先检查缓存
+            var cacheKey = CacheKeys.FormulationImage(id);
+            if (Cache.TryGetValue(cacheKey, out var cached) &&
+                cached is FormulationImage cachedImage &&
+                CacheTimestamps.TryGetValue(cacheKey, out var timestamp) &&
+                DateTime.Now - timestamp <= CacheExpiration)
+            {
+                result[id] = cachedImage.Image;
+                continue;
+            }
+
+            // 缓存未命中，加载图片
+            try
+            {
+                var image = await GetFormulationImageAsync(id, cancellationToken);
+                result[id] = image?.Image;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, $"加载方剂图片失败 ID={id}");
+                result[id] = null;
+            }
+        }
+
+        return result;
+    }
+
+    #endregion
+
+    #region 搜索和统计功能
+
+    /// <summary>
+    /// 搜索方剂 - 支持按名称或相关字段搜索
+    /// </summary>
+    public static async Task<List<FormulationCategory>> SearchFormulationsAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return [];
+
+            var results = new List<FormulationCategory>();
+            var searchPattern = $"%{searchTerm}%";
+
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@SearchTerm", searchPattern)
+            };
+
+            // 使用优化后的数据访问方法
+            await DataManager.Instance.ExecuteReaderAsync(
+                FormulationQueries.Formulation.SearchFormulations,
+                reader =>
+                {
+                    results.Add(new FormulationCategory(
+                        reader.GetInt32(0),
+                        reader.GetString(1),
+                        false));
+                    return Task.CompletedTask;
+                },
+                parameters,
+                cancellationToken
+            );
+
+            return results;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "搜索方剂失败: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 获取方剂统计信息
+    /// </summary>
+    public static async Task<FormulationStats> GetFormulationStatsAsync()
+    {
+        try
+        {
+            var stats = new FormulationStats();
+
+            // 使用单个批处理查询统计各种数据
+            await DataManager.Instance.ExecuteInTransactionAsync(async connection =>
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = FormulationQueries.Statistics.GetFormulationStats;
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                // 读取方剂总数
+                await reader.ReadAsync();
+                stats.TotalFormulations = reader.GetInt32(0);
+
+                // 读取分类总数
+                await reader.NextResultAsync();
+                await reader.ReadAsync();
+                stats.TotalCategories = reader.GetInt32(0);
+
+                // 读取组成总数
+                await reader.NextResultAsync();
+                await reader.ReadAsync();
+                stats.TotalComponents = reader.GetInt32(0);
+
+                // 读取不同药物总数
+                await reader.NextResultAsync();
+                await reader.ReadAsync();
+                stats.UniqueDrugs = reader.GetInt32(0);
+            });
+
+            return stats;
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e, "获取方剂统计数据失败: {Message}", e.Message);
+            return new FormulationStats();
+        }
+    }
+
+    #endregion
+
+    #region 预加载和性能优化
 
     /// <summary>
     /// 批量预加载方剂数据到内存缓存中
@@ -814,15 +991,18 @@ public class FormulationManager
             {
                 Task.Run(async () => await GetOrAddCacheAsync(CacheKeys.FirstCategories, async () => {
                     var categories = new List<FormulationCategory>();
-                    await using var pooledConnection = await DataManager.Pool.GetConnectionAsync(cancellationToken);
-                    var connection = pooledConnection.Connection;
-                    await using var command = new SqliteCommand(SqlQueries.GetFirstCategories, connection);
-                    await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                    var i = 0;
-                    while (await reader.ReadAsync(cancellationToken))
-                    {
-                        categories.Add(new FormulationCategory(--i, reader.GetString(0), true));
-                    }
+
+                    await DataManager.Instance.ExecuteReaderAsync(
+                        FormulationQueries.Category.GetFirstCategories,
+                        reader =>
+                        {
+                            var i = categories.Count;
+                            categories.Add(new FormulationCategory(--i, reader.GetString(0), true));
+                            return Task.CompletedTask;
+                        },
+                        cancellationToken: cancellationToken
+                    );
+
                     return categories;
                 }), cancellationToken),
 
@@ -840,4 +1020,51 @@ public class FormulationManager
             // 预加载失败不抛出异常，允许应用继续运行
         }
     }
+
+    /// <summary>
+    /// 优化缓存性能 - 整理和压缩缓存
+    /// </summary>
+    public static void CompactCache()
+    {
+        try
+        {
+            var removedItems = 0;
+            var currentTime = DateTime.Now;
+            var expiredKeys = (from entry in CacheTimestamps where currentTime - entry.Value > CacheExpiration select entry.Key).ToList();
+
+            // 找出过期的缓存项
+
+            // 批量移除过期缓存
+            foreach (var key in expiredKeys.Where(key => Cache.TryRemove(key, out _)))
+            {
+                CacheTimestamps.TryRemove(key, out _);
+                removedItems++;
+            }
+
+            if (removedItems > 0)
+            {
+                Logger.Debug($"缓存整理完成，移除了 {removedItems} 个过期项");
+            }
+
+            // 请求垃圾回收
+            GC.Collect(1, GCCollectionMode.Optimized, false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "缓存整理失败");
+        }
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// 方剂统计信息类
+/// </summary>
+public class FormulationStats
+{
+    public int TotalFormulations { get; set; }
+    public int TotalCategories { get; set; }
+    public int TotalComponents { get; set; }
+    public int UniqueDrugs { get; set; }
 }
