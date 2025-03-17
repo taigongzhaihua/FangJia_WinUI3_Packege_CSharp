@@ -225,15 +225,12 @@ public static class DrugManager
             // 使用unsafe代码直接处理字节数据，避免多余的复制
             unsafe
             {
-                fixed (byte* ptrDest = imageBytes)
-                {
-                    var bytesRead = reader.GetBytes(columnIndex, 0, imageBytes, 0, blobLength);
+                var bytesRead = reader.GetBytes(columnIndex, 0, imageBytes, 0, blobLength);
 
-                    // 验证读取的数据量是否正确
-                    if (bytesRead != blobLength)
-                    {
-                        throw new InvalidOperationException($"预期读取 {blobLength} 字节，但实际读取 {bytesRead} 字节");
-                    }
+                // 验证读取的数据量是否正确
+                if (bytesRead != blobLength)
+                {
+                    throw new InvalidOperationException($"预期读取 {blobLength} 字节，但实际读取 {bytesRead} 字节");
                 }
             }
 
@@ -327,9 +324,9 @@ public static class DrugManager
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否更新成功</returns>
     public static async Task<bool> UpdateDrugAsync(
-        int id,
-        (string key, string? value)[] fields,
-        CancellationToken cancellationToken = default)
+        int id, CancellationToken cancellationToken = default,
+        params (string key, string? value)[] fields
+        )
     {
         if (fields.Length == 0)
         {

@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using TGZH.Pinyin;
 
@@ -243,7 +242,7 @@ public partial class DrugViewModel : ObservableObject
         var value = SelectedDrug?.GetType().GetProperty(k)?.GetValue(SelectedDrug);
         if (value == null) return;
         var id = SelectedDrug!.Id;
-        await DrugManager.UpdateDrugAsync(id, CancellationToken.None, (k, value.ToString()));
+        await DrugManager.UpdateDrugAsync(id, fields: (k, value.ToString()));
         if (k == "Category")
         {
             await LoadDrugSummaryListAsync();
