@@ -31,56 +31,56 @@ public class FormulationManager
         public const string GetFormulationById =
             """
             SELECT Id, Name, CategoryId, Usage, Effect, Indication, Disease, 
-                                                             Application, Supplement, Song, Notes, Source FROM Formulation 
-                                                             WHERE Id = @FormulationId
+            Application, Supplement, Song, Notes, Source FROM Formulation 
+            WHERE Id = @FormulationId
             """;
         public const string GetFormulationCompositions = """
                                                          SELECT
-                                                                                                                  fc.Id,
-                                                                                                                  fc.FormulationId,
-                                                                                                                  fc.DrugID,
-                                                                                                                  fc.DrugName,
-                                                                                                                  fc.Effect,
-                                                                                                                  fc.Position,
-                                                                                                                  fc.Notes
-                                                                                                                  FROM FormulationComposition fc
-                                                                                                                  WHERE fc.FormulationId = @FormulationId
+                                                         fc.Id,
+                                                         fc.FormulationId,
+                                                         fc.DrugID,
+                                                         fc.DrugName,
+                                                         fc.Effect,
+                                                         fc.Position,
+                                                         fc.Notes
+                                                         FROM FormulationComposition fc
+                                                         WHERE fc.FormulationId = @FormulationId
                                                          """;
         public const string GetFormulationImage = "SELECT Id, Image FROM FormulationImage WHERE FormulationId = @FormulationId";
         public const string InsertFormulationComposition = """
                                                            INSERT INTO FormulationComposition 
-                                                                                                                      (FormulationId, DrugId, DrugName, Effect, Position, Notes)
-                                                                                                                      VALUES (@FormulationId, @DrugId, @DrugName, @Effect, @Position, @Notes);
-                                                                                                                      SELECT last_insert_rowid();
+                                                           (FormulationId, DrugId, DrugName, Effect, Position, Notes)
+                                                           VALUES (@FormulationId, @DrugId, @DrugName, @Effect, @Position, @Notes);
+                                                           SELECT last_insert_rowid();
                                                            """;
         public const string DeleteFormulationComposition = "DELETE FROM FormulationComposition WHERE Id = @Id";
         public const string DeleteCategory = "DELETE FROM Category WHERE Id = @Id";
         public const string DeleteFormulation = "DELETE FROM Formulation WHERE Id = @Id";
         public const string InsertFormulation = """
                                                 INSERT INTO Formulation 
-                                                                                                (Name, CategoryId, Usage, Effect, Indication, Disease, 
-                                                                                                Application, Supplement, Song, Notes, Source)
-                                                                                                VALUES (@Name, @CategoryId, @Usage, @Effect, @Indication, @Disease, 
-                                                                                                @Application, @Supplement, @Song, @Notes, @Source);
-                                                                                                SELECT last_insert_rowid();
+                                                (Name, CategoryId, Usage, Effect, Indication, Disease, 
+                                                Application, Supplement, Song, Notes, Source)
+                                                VALUES (@Name, @CategoryId, @Usage, @Effect, @Indication, @Disease, 
+                                                @Application, @Supplement, @Song, @Notes, @Source);
+                                                SELECT last_insert_rowid();
                                                 """;
         public const string InsertCategory = """
                                              INSERT INTO Category (FirstCategory, SecondCategory) 
-                                                                                          VALUES (@FirstCategory, @SecondCategory);
-                                                                                          SELECT last_insert_rowid();
+                                             VALUES (@FirstCategory, @SecondCategory);
+                                             SELECT last_insert_rowid();
                                              """;
 
         // 批量操作优化
         public const string GetAllSecondCategories = """
                                                      SELECT Id, FirstCategory, SecondCategory 
-                                                                                                          FROM Category 
-                                                                                                          ORDER BY FirstCategory, Id ASC
+                                                     FROM Category 
+                                                     ORDER BY FirstCategory, Id ASC
                                                      """;
 
         public const string GetAllFormulationsBasic = """
                                                       SELECT Id, Name, CategoryId 
-                                                                                                            FROM Formulation 
-                                                                                                            ORDER BY CategoryId, Id ASC
+                                                      FROM Formulation 
+                                                      ORDER BY CategoryId, Id ASC
                                                       """;
     }
 
@@ -225,7 +225,7 @@ public class FormulationManager
     public static async IAsyncEnumerable<FormulationCategory> GetFirstCategoriesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var firstCategories = await GetOrAddCacheAsync<List<FormulationCategory>>(
+        var firstCategories = await GetOrAddCacheAsync(
             CacheKeys.FirstCategories,
             async () =>
             {
@@ -261,7 +261,7 @@ public class FormulationManager
         string firstCategory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var secondCategories = await GetOrAddCacheAsync<List<FormulationCategory>>(
+        var secondCategories = await GetOrAddCacheAsync(
             CacheKeys.SecondCategories(firstCategory),
             async () =>
             {
@@ -296,7 +296,7 @@ public class FormulationManager
         int categoryId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var formulations = await GetOrAddCacheAsync<List<FormulationCategory>>(
+        var formulations = await GetOrAddCacheAsync(
             CacheKeys.Formulations(categoryId),
             async () =>
             {
@@ -380,7 +380,7 @@ public class FormulationManager
         int formulationId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var compositions = await GetOrAddCacheAsync<List<FormulationComposition>>(
+        var compositions = await GetOrAddCacheAsync(
             CacheKeys.FormulationCompositions(formulationId),
             async () =>
             {
@@ -437,42 +437,36 @@ public class FormulationManager
                     command.Parameters.AddWithValue("@FormulationId", formulationId);
 
                     await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                    if (await reader.ReadAsync(cancellationToken))
+                    if (!await reader.ReadAsync(cancellationToken)) return null;
+                    var id = reader.GetInt32(0);
+
+                    // 使用高效的方法获取图片数据
+                    if (reader.IsDBNull(1)) return null;
+                    var blobLength = (int)reader.GetBytes(1, 0, null, 0, 0);
+                    var imageBytes = new byte[blobLength];
+
+                    // 使用unsafe代码直接处理字节数据，避免多余的复制
+                    unsafe
                     {
-                        var id = reader.GetInt32(0);
-                        byte[] imageBytes;
-
-                        // 使用高效的方法获取图片数据
-                        if (!reader.IsDBNull(1))
+                        fixed (byte* ptrDest = imageBytes)
                         {
-                            var blobLength = (int)reader.GetBytes(1, 0, null, 0, 0);
-                            imageBytes = new byte[blobLength];
+                            var bytesRead = reader.GetBytes(1, 0, imageBytes, 0, blobLength);
 
-                            // 使用unsafe代码直接处理字节数据，避免多余的复制
-                            unsafe
+                            // 验证读取的数据量是否正确
+                            if (bytesRead != blobLength)
                             {
-                                fixed (byte* ptrDest = imageBytes)
-                                {
-                                    var bytesRead = reader.GetBytes(1, 0, imageBytes, 0, blobLength);
-
-                                    // 验证读取的数据量是否正确
-                                    if (bytesRead != blobLength)
-                                    {
-                                        throw new InvalidOperationException($"Expected to read {blobLength} bytes, but got {bytesRead}");
-                                    }
-                                }
+                                throw new InvalidOperationException($"Expected to read {blobLength} bytes, but got {bytesRead}");
                             }
-
-                            return new FormulationImage
-                            {
-                                Id = id,
-                                FormulationId = formulationId,
-                                Image = imageBytes
-                            };
                         }
                     }
 
-                    return null;
+                    return new FormulationImage
+                    {
+                        Id = id,
+                        FormulationId = formulationId,
+                        Image = imageBytes
+                    };
+
                 });
         }
         catch (Exception e)

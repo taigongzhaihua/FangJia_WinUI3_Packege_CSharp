@@ -12,18 +12,73 @@ using FangJia.Helpers;
 using Microsoft.Data.Sqlite;
 using NLog;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace FangJia.DataAccess;
 
-internal partial class DataManager : IDisposable
+/// <summary>
+/// 数据管理器：提供数据库访问和管理功能
+/// </summary>
+internal partial class DataManager : IAsyncDisposable, IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private static readonly string DatabasePath = AppHelper.GetFilePath("Data.db");
-    private static readonly string ConnectionString = $"Data Source={DatabasePath};";
-    public static readonly SqliteConnectionPool Pool = new(ConnectionString, 20);
+    private static readonly string ConnectionString = GetConnectionString();
+
+    // 保留静态连接池引用，以兼容现有代码
+    public static readonly SqliteConnectionPool Pool;
+
+    private static readonly Lazy<DataManager> _instance = new(() => new DataManager());
+    private readonly SqliteConnectionPool _pool;
+    private readonly SemaphoreSlim _initializationLock = new(1, 1);
+    private bool _initialized;
+    private bool _disposed;
+
+    /// <summary>
+    /// 静态构造函数，初始化静态连接池
+    /// </summary>
+    static DataManager()
+    {
+        Pool = new SqliteConnectionPool(ConnectionString, 20);
+    }
+
+    /// <summary>
+    /// 获取数据管理器实例
+    /// </summary>
+    public static DataManager Instance => _instance.Value;
+
+    /// <summary>
+    /// 获取数据库是否已初始化
+    /// </summary>
+    public bool IsInitialized => _initialized;
+
+    /// <summary>
+    /// 私有构造函数，防止外部直接实例化
+    /// </summary>
+    private DataManager()
+    {
+        // 使用静态池引用，避免创建两个池实例
+        _pool = Pool;
+    }
+
+    /// <summary>
+    /// 获取优化的SQLite连接字符串
+    /// </summary>
+    private static string GetConnectionString()
+    {
+        var builder = new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePath,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            Cache = SqliteCacheMode.Shared,
+            Pooling = false, // 我们使用自定义连接池，禁用ADO.NET内置连接池
+            ForeignKeys = true
+        };
+        return builder.ToString();
+    }
 
     /// <summary>
     /// 初始化数据库，并创建表（如果不存在）
@@ -45,27 +100,126 @@ internal partial class DataManager : IDisposable
         }
     }
 
+    // 修复 CreateDatabaseAndTable 方法中的 ValueTask 错误
     private static void CreateDatabaseAndTable(string databasePath)
     {
         // SQLite 连接字符串
         _ = Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? string.Empty);
-        using var poolConnection = Pool.GetConnectionAsync().Result;
-        var connection = poolConnection.Connection;
-        connection.Open();
-        var command = connection.CreateCommand();
-        // 创建表的 SQL 语句
-        command.CommandText =
-            """
+
+        // 修复: 正确等待 ValueTask 获取实际连接对象
+        var pooledConnection = Task.Run(async () => await Pool.GetConnectionAsync()).GetAwaiter().GetResult();
+
+        using (pooledConnection)
+        {
+            var connection = pooledConnection.Connection;
+            connection.Open();
+            var command = connection.CreateCommand();
+            // 创建表的 SQL 语句
+            command.CommandText = GetCreateTablesScript();
+            command.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>
+    /// 异步初始化数据库
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>异步任务</returns>
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_initialized) return;
+
+        await _initializationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_initialized) return;
+
+            Logger.Debug($"正在初始化数据库。路径：\"{DatabasePath}\"");
+
+            var directoryPath = Path.GetDirectoryName(DatabasePath);
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+                Logger.Debug($"已创建数据库目录：{directoryPath}");
+            }
+
+            var fileExists = File.Exists(DatabasePath);
+            if (!fileExists)
+            {
+                Logger.Info("未找到数据库文件。正在创建新数据库文件...");
+            }
+
+            // 创建或升级数据库结构
+            await CreateOrUpdateDatabaseSchemaAsync(cancellationToken).ConfigureAwait(false);
+
+            // 执行优化配置
+            await ExecuteDatabaseOptimizationAsync(cancellationToken).ConfigureAwait(false);
+
+            _initialized = true;
+            Logger.Info($"数据库初始化完成。位置：{DatabasePath}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "数据库初始化失败");
+            throw new InvalidOperationException("无法初始化数据库", ex);
+        }
+        finally
+        {
+            _initializationLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// 创建或更新数据库架构
+    /// </summary>
+    private async Task CreateOrUpdateDatabaseSchemaAsync(CancellationToken cancellationToken)
+    {
+        await using var cmdResult = await ExecuteCommandAsync(GetCreateTablesScript(), cancellationToken).ConfigureAwait(false);
+        Logger.Info("数据库表结构创建或更新成功");
+    }
+
+    /// <summary>
+    /// 执行数据库优化设置
+    /// </summary>
+    private async Task ExecuteDatabaseOptimizationAsync(CancellationToken cancellationToken)
+    {
+        // 应用性能优化配置
+        var pragmaCommands = """
+                             
+                                         PRAGMA journal_mode = WAL;
+                                         PRAGMA synchronous = NORMAL;
+                                         PRAGMA cache_size = 10000;
+                                         PRAGMA temp_store = MEMORY;
+                                         PRAGMA mmap_size = 30000000;
+                                         PRAGMA foreign_keys = ON;
+                                         PRAGMA auto_vacuum = INCREMENTAL;
+                                         PRAGMA optimize;
+                                     
+                             """;
+
+        await using var cmdResult = await ExecuteCommandAsync(pragmaCommands, cancellationToken).ConfigureAwait(false);
+        Logger.Debug("已应用数据库性能优化配置");
+    }
+
+    /// <summary>
+    /// 获取创建表的SQL脚本
+    /// </summary>
+    private static string GetCreateTablesScript()
+    {
+        return """
             CREATE TABLE IF NOT EXISTS Category(
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 FirstCategory TEXT NOT NULL,
                 SecondCategory TEXT NOT NULL
             );
+            
             CREATE TABLE IF NOT EXISTS Drug (
                 Id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name        TEXT,
-                EnglishName TEXT,
-                LatinName   TEXT,
+                Name        TEXT NOT NULL COLLATE NOCASE,
+                EnglishName TEXT COLLATE NOCASE,
+                LatinName   TEXT COLLATE NOCASE,
                 Category    TEXT,
                 Origin      TEXT,
                 Properties  TEXT,
@@ -77,18 +231,20 @@ internal partial class DataManager : IDisposable
                 Processed   TEXT,
                 Source      TEXT
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_drug_name ON Drug(Name);
+            CREATE INDEX IF NOT EXISTS idx_drug_englishname ON Drug(EnglishName);
+            
             CREATE TABLE IF NOT EXISTS DrugImage (
                 Id     INTEGER PRIMARY KEY AUTOINCREMENT,
-                DrugId INTEGER,
+                DrugId INTEGER NOT NULL,
                 Image  BLOB,
-                FOREIGN KEY (
-                    DrugId
-                )
-                REFERENCES Drug (Id) ON DELETE CASCADE
+                FOREIGN KEY (DrugId) REFERENCES Drug(Id) ON DELETE CASCADE
             );
+            
             CREATE TABLE IF NOT EXISTS Formulation (
                 Id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name        TEXT,
+                Name        TEXT NOT NULL COLLATE NOCASE,
                 CategoryId  INTEGER,
                 Usage       TEXT,
                 Effect      TEXT,
@@ -99,38 +255,73 @@ internal partial class DataManager : IDisposable
                 Song        TEXT,
                 Notes       TEXT,
                 Source      TEXT,
-                FOREIGN KEY (
-                    CategoryId
-                )
-                REFERENCES Category (Id) ON DELETE CASCADE
+                FOREIGN KEY (CategoryId) REFERENCES Category(Id) ON DELETE CASCADE
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_formulation_name ON Formulation(Name);
+            CREATE INDEX IF NOT EXISTS idx_formulation_category ON Formulation(CategoryId);
+            
             CREATE TABLE IF NOT EXISTS FormulationComposition (
                 Id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                FormulationId INTEGER,
-                DrugID        INTEGER REFERENCES Drug (Id),
-                DrugName      TEXT,
+                FormulationId INTEGER NOT NULL,
+                DrugID        INTEGER REFERENCES Drug(Id),
+                DrugName      TEXT NOT NULL,
                 Effect        TEXT,
                 Position      TEXT,
                 Notes         TEXT,
-                FOREIGN KEY (
-                    FormulationId
-                )
-                REFERENCES Formulation (Id) ON DELETE CASCADE
+                FOREIGN KEY (FormulationId) REFERENCES Formulation(Id) ON DELETE CASCADE
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_composition_formulation ON FormulationComposition(FormulationId);
+            CREATE INDEX IF NOT EXISTS idx_composition_drug ON FormulationComposition(DrugID);
+            
             CREATE TABLE IF NOT EXISTS FormulationImage (
                 Id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                FormulationId INTEGER,
+                FormulationId INTEGER NOT NULL,
                 Image         BLOB,
-                FOREIGN KEY (
-                    FormulationId
-                )
-                REFERENCES Formulation (Id) ON DELETE CASCADE
+                FOREIGN KEY (FormulationId) REFERENCES Formulation(Id) ON DELETE CASCADE
             );
+            
+            CREATE INDEX IF NOT EXISTS idx_formimage_formulation ON FormulationImage(FormulationId);
             """;
-        command.ExecuteNonQuery();
     }
 
-    public static async Task<(SqliteCommand command, PooledSqliteConnection pooledConnection)> CreateCommandAsync(string commandText, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 异步创建命令并执行
+    /// </summary>
+    /// <param name="commandText">SQL命令文本</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>命令和连接包装器</returns>
+    public async Task<CommandResult> ExecuteCommandAsync(string commandText, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_initialized && !commandText.Contains("PRAGMA") && !commandText.Contains("CREATE TABLE"))
+        {
+            await InitializeAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var pooledConnection = await _pool.GetConnectionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var connection = pooledConnection.Connection;
+            var command = connection.CreateCommand();
+            command.CommandText = commandText;
+            return new CommandResult(command, pooledConnection);
+        }
+        catch (Exception)
+        {
+            // 如果创建命令失败，确保释放连接
+            await pooledConnection.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 创建命令对象和连接（静态兼容方法）
+    /// </summary>
+    public static async Task<(SqliteCommand command, PooledSqliteConnection pooledConnection)> CreateCommandAsync(
+        string commandText, CancellationToken cancellationToken = default)
     {
         var pooledConnection = await Pool.GetConnectionAsync(cancellationToken);
         var connection = pooledConnection.Connection;
@@ -138,17 +329,271 @@ internal partial class DataManager : IDisposable
         command.CommandText = commandText;
         return (command, pooledConnection);
     }
+
     /// <summary>
-    /// 清理连接池中的空闲连接
+    /// 异步创建带参数的命令
     /// </summary>
-    public static Task CleanIdleConnectionsAsync(CancellationToken cancellationToken = default)
+    /// <param name="commandText">SQL命令文本</param>
+    /// <param name="parameters">命令参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>命令和连接包装器</returns>
+    public async Task<CommandResult> ExecuteCommandAsync(string commandText,
+        IEnumerable<(string name, object? value)> parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await ExecuteCommandAsync(commandText, cancellationToken).ConfigureAwait(false);
+        foreach (var (name, value) in parameters)
+        {
+            result.Command.Parameters.AddWithValue(name, value ?? DBNull.Value);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 异步执行查询并返回结果集的第一个值
+    /// </summary>
+    /// <typeparam name="T">返回值类型</typeparam>
+    /// <param name="commandText">SQL命令文本</param>
+    /// <param name="parameters">命令参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>查询结果的第一个值</returns>
+    public async Task<T?> ExecuteScalarAsync<T>(string commandText,
+        IEnumerable<(string name, object? value)>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var cmdResult = parameters != null
+            ? await ExecuteCommandAsync(commandText, parameters, cancellationToken).ConfigureAwait(false)
+            : await ExecuteCommandAsync(commandText, cancellationToken).ConfigureAwait(false);
+
+        var result = await cmdResult.Command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        if (result is DBNull or null)
+            return default;
+
+        return (T)Convert.ChangeType(result, typeof(T));
+    }
+
+    /// <summary>
+    /// 异步执行非查询语句并返回影响的行数
+    /// </summary>
+    /// <param name="commandText">SQL命令文本</param>
+    /// <param name="parameters">命令参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>受影响的行数</returns>
+    public async Task<int> ExecuteNonQueryAsync(string commandText,
+        IEnumerable<(string name, object? value)>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var cmdResult = parameters != null
+            ? await ExecuteCommandAsync(commandText, parameters, cancellationToken).ConfigureAwait(false)
+            : await ExecuteCommandAsync(commandText, cancellationToken).ConfigureAwait(false);
+
+        return await cmdResult.Command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 异步执行查询命令，并通过回调处理每个结果行
+    /// </summary>
+    /// <param name="commandText">SQL命令文本</param>
+    /// <param name="rowCallback">行处理回调</param>
+    /// <param name="parameters">命令参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>处理的行数</returns>
+    public async Task<int> ExecuteReaderAsync(string commandText,
+        Func<SqliteDataReader, Task> rowCallback,
+        IEnumerable<(string name, object? value)>? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var cmdResult = parameters != null
+            ? await ExecuteCommandAsync(commandText, parameters, cancellationToken).ConfigureAwait(false)
+            : await ExecuteCommandAsync(commandText, cancellationToken).ConfigureAwait(false);
+
+        var count = 0;
+        await using var reader = await cmdResult.Command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            await rowCallback(reader).ConfigureAwait(false);
+            count++;
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// 执行批量操作，在单个事务中
+    /// </summary>
+    /// <param name="batchAction">批处理操作</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>异步任务</returns>
+    public async Task ExecuteInTransactionAsync(Func<SqliteConnection, Task> batchAction, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+
+        await using var pooledConnection = await _pool.GetConnectionAsync(cancellationToken).ConfigureAwait(false);
+        var connection = pooledConnection.Connection;
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await batchAction(connection).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 检查表是否存在
+    /// </summary>
+    public async Task<bool> TableExistsAsync(string tableName, CancellationToken cancellationToken = default)
+    {
+        var query = $"SELECT 1 FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+        var result = await ExecuteScalarAsync<int?>(query, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result is 1;
+    }
+
+    /// <summary>
+    /// 获取数据库文件大小（字节）
+    /// </summary>
+    // 修复 CA1822: 标记为 static，因为不使用实例数据
+    public static long GetDatabaseSize()
+    {
+        try
+        {
+            var fileInfo = new FileInfo(DatabasePath);
+            return fileInfo.Exists ? fileInfo.Length : 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "获取数据库大小失败");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// 优化数据库（收缩空间等）
+    /// </summary>
+    public async Task OptimizeDatabaseAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+
+        Logger.Info("开始优化数据库...");
+        await ExecuteNonQueryAsync("""
+                                   
+                                               PRAGMA optimize;
+                                               PRAGMA vacuum;
+                                               PRAGMA incremental_vacuum;
+                                               PRAGMA wal_checkpoint(FULL);
+                                               PRAGMA analysis_limit=1000;
+                                               PRAGMA automatic_index=ON;
+                                               ANALYZE;
+                                           
+                                   """, cancellationToken: cancellationToken).ConfigureAwait(false);
+        Logger.Info("数据库优化完成");
+    }
+
+    /// <summary>
+    /// 清理连接池中的空闲连接（实例方法）
+    /// </summary>
+    public Task CleanIdleConnectionsAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _pool.CleanIdleConnectionsAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// 清理连接池中的空闲连接（静态兼容方法）
+    /// </summary>
+    public static Task CleanPoolIdleConnectionsAsync(CancellationToken cancellationToken = default)
     {
         return Pool.CleanIdleConnectionsAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// 备份数据库到指定路径
+    /// </summary>
+    public async Task<bool> BackupDatabaseAsync(string backupPath, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            // 确保目标目录存在
+            var directory = Path.GetDirectoryName(backupPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // 创建备份连接
+            await using var sourceConnection = new SqliteConnection(ConnectionString);
+            await sourceConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            // 创建目标连接
+            await using var backupConnection = new SqliteConnection($"Data Source={backupPath};Mode=ReadWriteCreate;");
+            await backupConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            // 执行备份
+            sourceConnection.BackupDatabase(backupConnection);
+            Logger.Info($"数据库已备份到: {backupPath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"备份数据库失败: {backupPath}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 释放资源（同步）
+    /// </summary>
     public void Dispose()
     {
-        Pool.Dispose();
+        if (_disposed) return;
+        _disposed = true;
+
+        // 不释放静态池，防止其他组件还在使用
+        _initializationLock.Dispose();
+
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// 释放资源（异步）
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // 不释放静态池，防止其他组件还在使用
+        _initializationLock.Dispose();
+
+        await Task.CompletedTask.ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// SQL命令结果包装类
+    /// </summary>
+    public class CommandResult(SqliteCommand command, PooledSqliteConnection connection) : IAsyncDisposable
+    {
+        public SqliteCommand Command { get; } = command ?? throw new ArgumentNullException(nameof(command));
+        private readonly PooledSqliteConnection _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+
+        public async ValueTask DisposeAsync()
+        {
+            await Command.DisposeAsync().ConfigureAwait(false);
+            await _connection.DisposeAsync().ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
     }
 }
