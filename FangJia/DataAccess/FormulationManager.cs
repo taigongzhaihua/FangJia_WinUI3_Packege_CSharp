@@ -98,7 +98,7 @@ public static class FormulationManager
 
             // 使用优化的 DataManager 执行查询
             await DataManager.Instance.ExecuteReaderAsync(
-                FormulationQueries.Category.GetAllSecondCategories,
+                SqlQueries.Category.GetAllSecondCategories,
                 reader =>
                 {
                     categories.Add((
@@ -137,7 +137,7 @@ public static class FormulationManager
             var result = new Dictionary<int, List<FormulationCategory>>();
 
             await DataManager.Instance.ExecuteReaderAsync(
-                FormulationQueries.Formulation.GetAllFormulationsBasic,
+                SqlQueries.Formulation.GetAllFormulationsBasic,
                 reader =>
                 {
                     var id = reader.GetInt32(0);
@@ -178,7 +178,7 @@ public static class FormulationManager
 
                 // 使用优化后的 DataManager 接口
                 await DataManager.Instance.ExecuteReaderAsync(
-                    FormulationQueries.Category.GetFirstCategories,
+                    SqlQueries.Category.GetFirstCategories,
                     reader =>
                     {
                         var i = categories.Count;
@@ -217,7 +217,7 @@ public static class FormulationManager
                 };
 
                 await DataManager.Instance.ExecuteReaderAsync(
-                    FormulationQueries.Category.GetSecondCategories,
+                    SqlQueries.Category.GetSecondCategories,
                     reader =>
                     {
                         categories.Add(new FormulationCategory(
@@ -254,7 +254,7 @@ public static class FormulationManager
             };
 
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                FormulationQueries.Category.InsertCategory,
+                SqlQueries.Category.InsertCategory,
                 parameters
             );
 
@@ -284,14 +284,14 @@ public static class FormulationManager
             // 获取分类信息用于清除缓存
             var getInfoParam = new List<(string name, object? value)> { ("@Id", id) };
             await DataManager.Instance.ExecuteScalarAsync<string>(
-                FormulationQueries.Category.GetCategoryById,
+                SqlQueries.Category.GetCategoryById,
                 getInfoParam
             );
 
             // 执行删除
             var deleteParam = new List<(string name, object? value)> { ("@Id", id) };
             await DataManager.Instance.ExecuteNonQueryAsync(
-                FormulationQueries.Category.DeleteCategory,
+                SqlQueries.Category.DeleteCategory,
                 deleteParam
             );
 
@@ -328,7 +328,7 @@ public static class FormulationManager
                 };
 
                 await DataManager.Instance.ExecuteReaderAsync(
-                    FormulationQueries.Formulation.GetFormulations,
+                    SqlQueries.Formulation.GetFormulations,
                     reader =>
                     {
                         items.Add(new FormulationCategory(
@@ -372,7 +372,7 @@ public static class FormulationManager
                     };
 
                     await DataManager.Instance.ExecuteReaderAsync(
-                        FormulationQueries.Formulation.GetFormulationById,
+                        SqlQueries.Formulation.GetFormulationById,
                         reader =>
                         {
                             formulation = new Formulation
@@ -429,7 +429,7 @@ public static class FormulationManager
             };
 
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                FormulationQueries.Formulation.InsertFormulation,
+                SqlQueries.Formulation.InsertFormulation,
                 parameters
             );
 
@@ -503,7 +503,7 @@ public static class FormulationManager
             // 执行删除
             var deleteParam = new List<(string name, object? value)> { ("@Id", id) };
             await DataManager.Instance.ExecuteNonQueryAsync(
-                FormulationQueries.Formulation.DeleteFormulation,
+                SqlQueries.Formulation.DeleteFormulation,
                 deleteParam
             );
 
@@ -540,7 +540,7 @@ public static class FormulationManager
                 };
 
                 await DataManager.Instance.ExecuteReaderAsync(
-                    FormulationQueries.Composition.GetFormulationCompositions,
+                    SqlQueries.Composition.GetFormulationCompositions,
                     reader =>
                     {
                         items.Add(new FormulationComposition
@@ -587,7 +587,7 @@ public static class FormulationManager
             };
 
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                FormulationQueries.Composition.InsertFormulationComposition,
+                SqlQueries.Composition.InsertFormulationComposition,
                 parameters
             );
 
@@ -615,14 +615,14 @@ public static class FormulationManager
             // 先获取FormulationId用于清除缓存
             var getIdParam = new List<(string name, object? value)> { ("@Id", compositionId) };
             var formulationId = await DataManager.Instance.ExecuteScalarAsync<int>(
-                FormulationQueries.Composition.GetCompositionFormulationId,
+                SqlQueries.Composition.GetCompositionFormulationId,
                 getIdParam
             );
 
             // 执行删除
             var deleteParam = new List<(string name, object? value)> { ("@Id", compositionId) };
             await DataManager.Instance.ExecuteNonQueryAsync(
-                FormulationQueries.Composition.DeleteFormulationComposition,
+                SqlQueries.Composition.DeleteFormulationComposition,
                 deleteParam
             );
 
@@ -651,7 +651,7 @@ public static class FormulationManager
             // 获取FormulationId用于清除缓存
             var getIdParam = new List<(string name, object? value)> { ("@Id", id) };
             var formulationId = await DataManager.Instance.ExecuteScalarAsync<int>(
-                FormulationQueries.Composition.GetCompositionFormulationId,
+                SqlQueries.Composition.GetCompositionFormulationId,
                 getIdParam
             );
 
@@ -712,7 +712,7 @@ public static class FormulationManager
                     };
 
                     await DataManager.Instance.ExecuteReaderAsync(
-                        FormulationQueries.Image.GetFormulationImage,
+                        SqlQueries.Image.GetFormulationImage,
                         reader =>
                         {
                             var id = reader.GetInt32(0);
@@ -772,7 +772,7 @@ public static class FormulationManager
         {
             // 先检查是否已存在图片
             var existingImageId = await DataManager.Instance.ExecuteScalarAsync<int?>(
-                FormulationQueries.Image.CheckImageExists,
+                SqlQueries.Image.CheckImageExists,
                 [("@FormulationId", formulationId)]
             );
 
@@ -780,7 +780,7 @@ public static class FormulationManager
             {
                 // 如果已存在，则更新
                 await DataManager.Instance.ExecuteNonQueryAsync(
-                    FormulationQueries.Image.UpdateFormulationImage,
+                    SqlQueries.Image.UpdateFormulationImage,
                     [
                         ("@FormulationId", formulationId),
                         ("@Image", imageData == null ? DBNull.Value : imageData)
@@ -795,7 +795,7 @@ public static class FormulationManager
 
             // 如果不存在，则插入新记录
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                FormulationQueries.Image.InsertFormulationImage,
+                SqlQueries.Image.InsertFormulationImage,
                 [
                     ("@FormulationId", formulationId),
                     ("@Image", imageData == null ? DBNull.Value : imageData)
@@ -829,7 +829,7 @@ public static class FormulationManager
             };
 
             var rowsAffected = await DataManager.Instance.ExecuteNonQueryAsync(
-                FormulationQueries.Image.DeleteFormulationImage,
+                SqlQueries.Image.DeleteFormulationImage,
                 parameters
             );
 
@@ -905,7 +905,7 @@ public static class FormulationManager
 
             // 使用优化后的数据访问方法
             await DataManager.Instance.ExecuteReaderAsync(
-                FormulationQueries.Formulation.SearchFormulations,
+                SqlQueries.Formulation.SearchFormulations,
                 reader =>
                 {
                     results.Add(new FormulationCategory(
@@ -940,7 +940,7 @@ public static class FormulationManager
             await DataManager.Instance.ExecuteInTransactionAsync(async connection =>
             {
                 await using var command = connection.CreateCommand();
-                command.CommandText = FormulationQueries.Statistics.GetFormulationStats;
+                command.CommandText = SqlQueries.Statistics.GetFormulationStats;
 
                 await using var reader = await command.ExecuteReaderAsync();
 
@@ -993,7 +993,7 @@ public static class FormulationManager
                     var categories = new List<FormulationCategory>();
 
                     await DataManager.Instance.ExecuteReaderAsync(
-                        FormulationQueries.Category.GetFirstCategories,
+                        SqlQueries.Category.GetFirstCategories,
                         reader =>
                         {
                             var i = categories.Count;
@@ -1006,8 +1006,8 @@ public static class FormulationManager
                     return categories;
                 }), cancellationToken),
 
-                Task.Run(async () => await LoadAllCategoriesAsync(cancellationToken)),
-                Task.Run(async () => await LoadAllFormulationsBasicAsync(cancellationToken))
+                Task.Run(async () => await LoadAllCategoriesAsync(cancellationToken), cancellationToken),
+                Task.Run(async () => await LoadAllFormulationsBasicAsync(cancellationToken), cancellationToken)
             };
 
             await Task.WhenAll(tasks);

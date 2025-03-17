@@ -8,7 +8,18 @@
 // 转载请注明出处
 //------------------------------------------------------------------------
 
+//------------------------------------------------------------------------
+// 本应用部分代码参考了以下开源项目：
+// 1.WinUi3 Gallery
+// 2.WinUI Community Toolkit
+// 3.部分代码由 ChatGPT 、DeepSeek、Copilot 生成
+// 版权归原作者所有
+// FangJia 仅做学习交流使用
+// 转载请注明出处
+//------------------------------------------------------------------------
+
 using FangJia.Common;
+using FangJia.DataAccess.Sql;
 using JetBrains.Annotations;
 using Microsoft.Data.Sqlite;
 using NLog;
@@ -30,56 +41,6 @@ public static class DrugManager
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// SQL查询常量类
-    /// </summary>
-    private static class SqlQueries
-    {
-        public const string GetDrugSummaryList = "SELECT Id, Name, Category FROM Drug";
-
-        public const string GetDrugList = "SELECT * FROM Drug";
-
-        public const string GetDrug = "SELECT * FROM Drug WHERE Id = @Id";
-
-        public const string GetDrugImage = "SELECT * FROM DrugImage WHERE DrugId = @Id";
-
-        public const string InsertDrug = """
-            INSERT INTO Drug (
-                Name, EnglishName, LatinName, Category, Origin, 
-                Properties, Quality, Taste, Meridian, Effect, 
-                Notes, Processed, Source
-            ) VALUES (
-                @Name, @EnglishName, @LatinName, @Category, @Origin, 
-                @Properties, @Quality, @Taste, @Meridian, @Effect, 
-                @Notes, @Processed, @Source
-            );
-            SELECT last_insert_rowid();
-            """;
-
-        public const string InsertDrugImage = """
-            INSERT INTO DrugImage (DrugId, Image) 
-            VALUES (@DrugId, @Image);
-            SELECT last_insert_rowid();
-            """;
-
-        public const string UpdateDrugImage = "UPDATE DrugImage SET Image = @Image WHERE Id = @Id";
-
-        public const string DeleteDrug = "DELETE FROM Drug WHERE Id = @Id";
-
-        public const string DeleteDrugImage = "DELETE FROM DrugImage WHERE DrugId = @Id";
-
-        public const string SearchDrugs = "SELECT Id, Name, Category FROM Drug WHERE Name LIKE @SearchTerm OR EnglishName LIKE @SearchTerm OR LatinName LIKE @SearchTerm";
-
-        /// <summary>
-        /// 生成动态更新SQL
-        /// </summary>
-        public static string UpdateDrug(int id, params string[] keys)
-        {
-            var set = string.Join(", ", keys.Select(k => $"{k} = @{k}"));
-            return $"UPDATE Drug SET {set} WHERE Id = {id}";
-        }
-    }
-
-    /// <summary>
     /// 获取药物摘要列表
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
@@ -87,8 +48,8 @@ public static class DrugManager
     public static async IAsyncEnumerable<DrugSummary> GetDrugSummaryListAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // 修复: 不在 try 块中使用 yield return
-        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.GetDrugSummaryList, cancellationToken);
+        // 使用统一的SQL语句管理
+        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.Drug.GetDrugSummaryList, cancellationToken);
         await using (pooledConnection)
         await using (command)
         {
@@ -118,15 +79,13 @@ public static class DrugManager
             var results = new List<DrugSummary>();
             var searchPattern = $"%{searchTerm}%";
 
-            // 修复: 正确构造参数集合
             var parameters = new List<(string name, object? value)>
             {
                 ("@SearchTerm", searchPattern)
             };
 
             await DataManager.Instance.ExecuteReaderAsync(
-                SqlQueries.SearchDrugs,
-                // 修复: 移除不必要的异步关键字 
+                SqlQueries.Drug.SearchDrugs,
                 reader =>
                 {
                     results.Add(new DrugSummary
@@ -158,8 +117,7 @@ public static class DrugManager
     public static async IAsyncEnumerable<Drug> GetDrugListAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // 修复: 不在 try 块中使用 yield return
-        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.GetDrugList, cancellationToken);
+        var (command, pooledConnection) = await DataManager.CreateCommandAsync(SqlQueries.Drug.GetDrugList, cancellationToken);
         await using (pooledConnection)
         await using (command)
         {
@@ -183,15 +141,13 @@ public static class DrugManager
         {
             Drug? drug = null;
 
-            // 修复: 正确构造参数集合
             var parameters = new List<(string name, object? value)>
             {
                 ("@Id", id)
             };
 
             await DataManager.Instance.ExecuteReaderAsync(
-                SqlQueries.GetDrug,
-                // 修复: 移除不必要的异步关键字
+                SqlQueries.Drug.GetDrug,
                 reader =>
                 {
                     drug = MapDrugFromReader(reader);
@@ -221,22 +177,20 @@ public static class DrugManager
         {
             DrugImage? image = null;
 
-            // 修复: 正确构造参数集合
             var parameters = new List<(string name, object? value)>
             {
                 ("@Id", drugId)
             };
 
             await DataManager.Instance.ExecuteReaderAsync(
-                SqlQueries.GetDrugImage,
-                // 修复: 移除不必要的异步关键字
+                SqlQueries.Drug.GetDrugImage,
                 reader =>
                 {
                     image = new DrugImage
                     {
                         Id = reader.GetInt32(0),
                         DrugId = reader.GetInt32(1),
-                        Image = reader.IsDBNull(2) ? null : reader.GetFieldValue<byte[]>(2)
+                        Image = reader.IsDBNull(2) ? null : GetImageDataSafely(reader, 2)
                     };
                     return Task.CompletedTask;
                 },
@@ -249,6 +203,46 @@ public static class DrugManager
         {
             Logger.Error(ex, $"获取药物图片失败，药物ID={drugId}");
             return new DrugImage { DrugId = drugId };
+        }
+    }
+
+    /// <summary>
+    /// 使用unsafe代码高效读取图片数据
+    /// </summary>
+    private static byte[]? GetImageDataSafely(SqliteDataReader reader, int columnIndex)
+    {
+        if (reader.IsDBNull(columnIndex))
+            return null;
+
+        try
+        {
+            var blobLength = (int)reader.GetBytes(columnIndex, 0, null, 0, 0);
+            if (blobLength == 0)
+                return null;
+
+            var imageBytes = new byte[blobLength];
+
+            // 使用unsafe代码直接处理字节数据，避免多余的复制
+            unsafe
+            {
+                fixed (byte* ptrDest = imageBytes)
+                {
+                    var bytesRead = reader.GetBytes(columnIndex, 0, imageBytes, 0, blobLength);
+
+                    // 验证读取的数据量是否正确
+                    if (bytesRead != blobLength)
+                    {
+                        throw new InvalidOperationException($"预期读取 {blobLength} 字节，但实际读取 {bytesRead} 字节");
+                    }
+                }
+            }
+
+            return imageBytes;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "读取图片数据时出错");
+            return null;
         }
     }
 
@@ -281,7 +275,7 @@ public static class DrugManager
             };
 
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                SqlQueries.InsertDrug,
+                SqlQueries.Drug.InsertDrug,
                 parameters,
                 cancellationToken);
 
@@ -308,12 +302,11 @@ public static class DrugManager
             var parameters = new List<(string name, object? value)>
             {
                 ("@DrugId", drugImage.DrugId),
-                // 修复: 正确处理 byte[] 和 DBNull
                 ("@Image", drugImage.Image as object ?? DBNull.Value)
             };
 
             var result = await DataManager.Instance.ExecuteScalarAsync<long>(
-                SqlQueries.InsertDrugImage,
+                SqlQueries.Drug.InsertDrugImage,
                 parameters,
                 cancellationToken);
 
@@ -346,7 +339,7 @@ public static class DrugManager
         try
         {
             var keys = fields.Select(f => f.key).ToArray();
-            var sql = SqlQueries.UpdateDrug(id, keys);
+            var sql = SqlQueries.Drug.BuildUpdateSql(id, keys);
 
             var parameters = new List<(string name, object? value)>
             {
@@ -356,7 +349,7 @@ public static class DrugManager
             parameters.AddRange(fields.Select(f => ($"@{f.key}", f.value as object ?? DBNull.Value))!);
 
             var rowsAffected = await DataManager.Instance.ExecuteNonQueryAsync(
-                sql,
+                                sql,
                 parameters,
                 cancellationToken);
 
@@ -379,30 +372,12 @@ public static class DrugManager
     {
         try
         {
-            // 修复: 使用正确的 lambda 和返回值
             var success = false;
 
             await DataManager.Instance.ExecuteInTransactionAsync(connection =>
             {
                 using var cmd = connection.CreateCommand();
-                cmd.CommandText = """
-                                  
-                                                      UPDATE Drug SET 
-                                                          Name = @Name, 
-                                                          EnglishName = @EnglishName, 
-                                                          LatinName = @LatinName,
-                                                          Category = @Category, 
-                                                          Origin = @Origin, 
-                                                          Properties = @Properties,
-                                                          Quality = @Quality, 
-                                                          Taste = @Taste, 
-                                                          Meridian = @Meridian,
-                                                          Effect = @Effect, 
-                                                          Notes = @Notes, 
-                                                          Processed = @Processed,
-                                                          Source = @Source
-                                                      WHERE Id = @Id
-                                  """;
+                cmd.CommandText = SqlQueries.Drug.UpdateDrugFull;
 
                 cmd.Parameters.AddWithValue("@Id", drug.Id);
                 cmd.Parameters.AddWithValue("@Name", drug.Name);
@@ -449,12 +424,11 @@ public static class DrugManager
             var parameters = new List<(string name, object? value)>
             {
                 ("@Id", id),
-                // 修复: 正确处理 byte[] 和 DBNull
                 ("@Image", image as object ?? DBNull.Value)
             };
 
             var rowsAffected = await DataManager.Instance.ExecuteNonQueryAsync(
-                SqlQueries.UpdateDrugImage,
+                SqlQueries.Drug.UpdateDrugImage,
                 parameters,
                 cancellationToken);
 
@@ -477,7 +451,6 @@ public static class DrugManager
     {
         try
         {
-            // 修复: 正确构造参数集合
             var parameters = new List<(string name, object? value)>
             {
                 ("@Id", id)
@@ -485,7 +458,7 @@ public static class DrugManager
 
             // 由于设置了外键级联删除，只需删除药物表中的记录
             var rowsAffected = await DataManager.Instance.ExecuteNonQueryAsync(
-                SqlQueries.DeleteDrug,
+                SqlQueries.Drug.DeleteDrug,
                 parameters,
                 cancellationToken);
 
@@ -521,6 +494,81 @@ public static class DrugManager
             Source = reader.IsDBNull(13) ? null : reader.GetString(13)
         };
     }
+
+    /// <summary>
+    /// 检查药物是否存在
+    /// </summary>
+    /// <param name="id">药物ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>药物是否存在</returns>
+    public static async Task<bool> DrugExistsAsync(int id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var parameters = new List<(string name, object? value)>
+            {
+                ("@Id", id)
+            };
+
+            var result = await DataManager.Instance.ExecuteScalarAsync<int?>(
+                "SELECT 1 FROM Drug WHERE Id = @Id",
+                parameters,
+                cancellationToken);
+
+            return result.HasValue;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, $"检查药物存在失败，ID={id}");
+            throw new DataAccessException($"检查药物ID={id}是否存在时出错", ex);
+        }
+    }
+
+    /// <summary>
+    /// 获取药物统计信息
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>药物统计信息</returns>
+    public static async Task<DrugStatistics> GetDrugStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stats = new DrugStatistics();
+
+            // 药物总数
+            var totalCount = await DataManager.Instance.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM Drug",
+                cancellationToken: cancellationToken);
+            stats.TotalCount = totalCount;
+
+            // 分类统计
+            var categories = new Dictionary<string, int>();
+            await DataManager.Instance.ExecuteReaderAsync(
+                "SELECT Category, COUNT(*) FROM Drug WHERE Category IS NOT NULL GROUP BY Category",
+                reader =>
+                {
+                    var category = reader.GetString(0);
+                    var count = reader.GetInt32(1);
+                    categories[category] = count;
+                    return Task.CompletedTask;
+                },
+                cancellationToken: cancellationToken);
+            stats.CategoryCounts = categories;
+
+            // 图片统计
+            var imageCount = await DataManager.Instance.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM DrugImage",
+                cancellationToken: cancellationToken);
+            stats.ImageCount = imageCount;
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "获取药物统计信息失败");
+            throw new DataAccessException("获取药物统计信息时出错", ex);
+        }
+    }
 }
 
 /// <summary>
@@ -530,4 +578,25 @@ public class DataAccessException : Exception
 {
     public DataAccessException(string message) : base(message) { }
     public DataAccessException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>
+/// 药物统计信息
+/// </summary>
+public class DrugStatistics
+{
+    /// <summary>
+    /// 药物总数
+    /// </summary>
+    public int TotalCount { get; set; }
+
+    /// <summary>
+    /// 各分类药物数量
+    /// </summary>
+    public Dictionary<string, int> CategoryCounts { get; set; } = [];
+
+    /// <summary>
+    /// 药物图片数量
+    /// </summary>
+    public int ImageCount { get; set; }
 }

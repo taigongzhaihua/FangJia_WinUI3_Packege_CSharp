@@ -8,6 +8,17 @@
 // 转载请注明出处
 //------------------------------------------------------------------------
 
+//------------------------------------------------------------------------
+// 本应用部分代码参考了以下开源项目：
+// 1.WinUi3 Gallery
+// 2.WinUI Community Toolkit
+// 3.部分代码由 ChatGPT 、DeepSeek、Copilot 生成
+// 版权归原作者所有
+// FangJia 仅做学习交流使用
+// 转载请注明出处
+//------------------------------------------------------------------------
+
+using FangJia.DataAccess.Sql;
 using FangJia.Helpers;
 using Microsoft.Data.Sqlite;
 using NLog;
@@ -34,7 +45,6 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     private static readonly Lazy<DataManager> _instance = new(() => new DataManager());
     private readonly SqliteConnectionPool _pool;
     private readonly SemaphoreSlim _initializationLock = new(1, 1);
-    private bool _initialized;
     private bool _disposed;
 
     /// <summary>
@@ -53,7 +63,7 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     /// <summary>
     /// 获取数据库是否已初始化
     /// </summary>
-    public bool IsInitialized => _initialized;
+    public bool IsInitialized { get; private set; }
 
     /// <summary>
     /// 私有构造函数，防止外部直接实例化
@@ -100,13 +110,15 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
         }
     }
 
-    // 修复 CreateDatabaseAndTable 方法中的 ValueTask 错误
+    /// <summary>
+    /// 创建数据库和表结构
+    /// </summary>
     private static void CreateDatabaseAndTable(string databasePath)
     {
-        // SQLite 连接字符串
+        // 确保目录存在
         _ = Directory.CreateDirectory(Path.GetDirectoryName(databasePath) ?? string.Empty);
 
-        // 修复: 正确等待 ValueTask 获取实际连接对象
+        // 获取连接并创建表结构
         var pooledConnection = Task.Run(async () => await Pool.GetConnectionAsync()).GetAwaiter().GetResult();
 
         using (pooledConnection)
@@ -114,8 +126,8 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
             var connection = pooledConnection.Connection;
             connection.Open();
             var command = connection.CreateCommand();
-            // 创建表的 SQL 语句
-            command.CommandText = GetCreateTablesScript();
+            // 使用集中管理的SQL语句创建表结构
+            command.CommandText = SqlQueries.Database.CreateTables;
             command.ExecuteNonQuery();
         }
     }
@@ -129,12 +141,12 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_initialized) return;
+        if (IsInitialized) return;
 
         await _initializationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_initialized) return;
+            if (IsInitialized) return;
 
             Logger.Debug($"正在初始化数据库。路径：\"{DatabasePath}\"");
 
@@ -157,7 +169,7 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
             // 执行优化配置
             await ExecuteDatabaseOptimizationAsync(cancellationToken).ConfigureAwait(false);
 
-            _initialized = true;
+            IsInitialized = true;
             Logger.Info($"数据库初始化完成。位置：{DatabasePath}");
         }
         catch (Exception ex)
@@ -176,7 +188,8 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     /// </summary>
     private async Task CreateOrUpdateDatabaseSchemaAsync(CancellationToken cancellationToken)
     {
-        await using var cmdResult = await ExecuteCommandAsync(GetCreateTablesScript(), cancellationToken).ConfigureAwait(false);
+        // 使用集中管理的SQL语句创建表结构
+        await using var cmdResult = await ExecuteCommandAsync(SqlQueries.Database.CreateTables, cancellationToken).ConfigureAwait(false);
         Logger.Info("数据库表结构创建或更新成功");
     }
 
@@ -185,105 +198,9 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     /// </summary>
     private async Task ExecuteDatabaseOptimizationAsync(CancellationToken cancellationToken)
     {
-        // 应用性能优化配置
-        var pragmaCommands = """
-                             
-                                         PRAGMA journal_mode = WAL;
-                                         PRAGMA synchronous = NORMAL;
-                                         PRAGMA cache_size = 10000;
-                                         PRAGMA temp_store = MEMORY;
-                                         PRAGMA mmap_size = 30000000;
-                                         PRAGMA foreign_keys = ON;
-                                         PRAGMA auto_vacuum = INCREMENTAL;
-                                         PRAGMA optimize;
-                                     
-                             """;
-
-        await using var cmdResult = await ExecuteCommandAsync(pragmaCommands, cancellationToken).ConfigureAwait(false);
+        // 使用集中管理的SQL语句应用性能优化配置
+        await using var cmdResult = await ExecuteCommandAsync(SqlQueries.Database.OptimizationPragmas, cancellationToken).ConfigureAwait(false);
         Logger.Debug("已应用数据库性能优化配置");
-    }
-
-    /// <summary>
-    /// 获取创建表的SQL脚本
-    /// </summary>
-    private static string GetCreateTablesScript()
-    {
-        return """
-            CREATE TABLE IF NOT EXISTS Category(
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                FirstCategory TEXT NOT NULL,
-                SecondCategory TEXT NOT NULL
-            );
-            
-            CREATE TABLE IF NOT EXISTS Drug (
-                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name        TEXT NOT NULL COLLATE NOCASE,
-                EnglishName TEXT COLLATE NOCASE,
-                LatinName   TEXT COLLATE NOCASE,
-                Category    TEXT,
-                Origin      TEXT,
-                Properties  TEXT,
-                Quality     TEXT,
-                Taste       TEXT,
-                Meridian    TEXT,
-                Effect      TEXT,
-                Notes       TEXT,
-                Processed   TEXT,
-                Source      TEXT
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_drug_name ON Drug(Name);
-            CREATE INDEX IF NOT EXISTS idx_drug_englishname ON Drug(EnglishName);
-            
-            CREATE TABLE IF NOT EXISTS DrugImage (
-                Id     INTEGER PRIMARY KEY AUTOINCREMENT,
-                DrugId INTEGER NOT NULL,
-                Image  BLOB,
-                FOREIGN KEY (DrugId) REFERENCES Drug(Id) ON DELETE CASCADE
-            );
-            
-            CREATE TABLE IF NOT EXISTS Formulation (
-                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name        TEXT NOT NULL COLLATE NOCASE,
-                CategoryId  INTEGER,
-                Usage       TEXT,
-                Effect      TEXT,
-                Indication  TEXT,
-                Disease     TEXT,
-                Application TEXT,
-                Supplement  TEXT,
-                Song        TEXT,
-                Notes       TEXT,
-                Source      TEXT,
-                FOREIGN KEY (CategoryId) REFERENCES Category(Id) ON DELETE CASCADE
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_formulation_name ON Formulation(Name);
-            CREATE INDEX IF NOT EXISTS idx_formulation_category ON Formulation(CategoryId);
-            
-            CREATE TABLE IF NOT EXISTS FormulationComposition (
-                Id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                FormulationId INTEGER NOT NULL,
-                DrugID        INTEGER REFERENCES Drug(Id),
-                DrugName      TEXT NOT NULL,
-                Effect        TEXT,
-                Position      TEXT,
-                Notes         TEXT,
-                FOREIGN KEY (FormulationId) REFERENCES Formulation(Id) ON DELETE CASCADE
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_composition_formulation ON FormulationComposition(FormulationId);
-            CREATE INDEX IF NOT EXISTS idx_composition_drug ON FormulationComposition(DrugID);
-            
-            CREATE TABLE IF NOT EXISTS FormulationImage (
-                Id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                FormulationId INTEGER NOT NULL,
-                Image         BLOB,
-                FOREIGN KEY (FormulationId) REFERENCES Formulation(Id) ON DELETE CASCADE
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_formimage_formulation ON FormulationImage(FormulationId);
-            """;
     }
 
     /// <summary>
@@ -296,7 +213,7 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_initialized && !commandText.Contains("PRAGMA") && !commandText.Contains("CREATE TABLE"))
+        if (!IsInitialized && !commandText.Contains("PRAGMA") && !commandText.Contains("CREATE TABLE"))
         {
             await InitializeAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -427,7 +344,7 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+        if (!IsInitialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         await using var pooledConnection = await _pool.GetConnectionAsync(cancellationToken).ConfigureAwait(false);
         var connection = pooledConnection.Connection;
@@ -450,15 +367,19 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     /// </summary>
     public async Task<bool> TableExistsAsync(string tableName, CancellationToken cancellationToken = default)
     {
-        var query = $"SELECT 1 FROM sqlite_master WHERE type='table' AND name='{tableName}';";
-        var result = await ExecuteScalarAsync<int?>(query, cancellationToken: cancellationToken).ConfigureAwait(false);
+        // 使用参数化查询以避免SQL注入风险
+        var parameters = new List<(string name, object? value)> { ("@TableName", tableName) };
+        var result = await ExecuteScalarAsync<int?>(
+            SqlQueries.Database.TableExists,
+            parameters,
+            cancellationToken).ConfigureAwait(false);
+
         return result is 1;
     }
 
     /// <summary>
     /// 获取数据库文件大小（字节）
     /// </summary>
-    // 修复 CA1822: 标记为 static，因为不使用实例数据
     public static long GetDatabaseSize()
     {
         try
@@ -480,20 +401,13 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+        if (!IsInitialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         Logger.Info("开始优化数据库...");
-        await ExecuteNonQueryAsync("""
-                                   
-                                               PRAGMA optimize;
-                                               PRAGMA vacuum;
-                                               PRAGMA incremental_vacuum;
-                                               PRAGMA wal_checkpoint(FULL);
-                                               PRAGMA analysis_limit=1000;
-                                               PRAGMA automatic_index=ON;
-                                               ANALYZE;
-                                           
-                                   """, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await ExecuteNonQueryAsync(
+            SqlQueries.Database.DatabaseMaintenance,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
         Logger.Info("数据库优化完成");
     }
 
@@ -521,7 +435,7 @@ internal partial class DataManager : IAsyncDisposable, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_initialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
+        if (!IsInitialized) await InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
