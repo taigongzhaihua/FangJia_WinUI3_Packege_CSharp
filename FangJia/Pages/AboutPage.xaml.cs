@@ -48,13 +48,13 @@ public sealed partial class AboutPage
             var major = (versionNumbers & 0xFFFF000000000000L) >> 48;
             var minor = (versionNumbers & 0x0000FFFF00000000L) >> 32;
             var build = (versionNumbers & 0x00000000FFFF0000L) >> 16;
-            var revision = (versionNumbers & 0x000000000000FFFFL);
+            var revision = versionNumbers & 0x000000000000FFFFL;
             return $"{major}.{minor}.{build}.{revision}";
         }
     }
 
     private static readonly string GitHubUri = Properties.Resource.GitHubUri;
-    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+    private void ButtonBase_OnClick(object _, RoutedEventArgs _1)
     {
         OpenUrl(GitHubUri);
     }
@@ -80,7 +80,7 @@ public sealed partial class AboutPage
     private static string EMail => Properties.Resource.EMail;
 
 
-    private void CopyEMail(object sender, RoutedEventArgs e)
+    private void CopyEMail(object _, RoutedEventArgs _1)
     {
         var dataPackage = new DataPackage
         {

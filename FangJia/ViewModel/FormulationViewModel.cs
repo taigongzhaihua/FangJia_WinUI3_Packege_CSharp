@@ -7,7 +7,6 @@
 // FangJia 仅做学习交流使用
 // 转载请注明出处
 //------------------------------------------------------------------------
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.WinUI;
@@ -17,6 +16,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using NLog;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -32,6 +32,10 @@ public partial class FormulationViewModel : ObservableObject
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
     private readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private bool _isUpdatingFromCategoryChange;
+
+    // 添加内存缓存
+    private readonly ConcurrentDictionary<int, Formulation> _formulationCache = new();
+    private readonly ConcurrentDictionary<int, FormulationImage> _imageCache = new();
 
     #region 属性
 
@@ -59,6 +63,7 @@ public partial class FormulationViewModel : ObservableObject
     public FormulationViewModel()
     {
         _logger.Info($"{typeof(FormulationViewModel).FullName}初始化");
+
     }
 
     #region 数据加载
@@ -86,44 +91,71 @@ public partial class FormulationViewModel : ObservableObject
                 _logger.Debug("清空现有数据并设置加载状态");
             });
 
+            // 使用优化的批量加载数据方法
+            var categoriesTask = FormulationManager.LoadAllCategoriesAsync();
+            var formulationsTask = FormulationManager.LoadAllFormulationsBasicAsync();
+
+            // 同时执行两个任务
+            await Task.WhenAll(categoriesTask, formulationsTask);
+
+            var categories = await categoriesTask;
+            var formulations = await formulationsTask;
+
             var categoryCount = 0;
             var secondCategoryCount = 0;
             var formulationCount = 0;
 
-            // 加载一级分类
-            _logger.Debug("开始加载一级分类");
-            await foreach (var category in FormulationManager.GetFirstCategoriesAsync())
-            {
-                categoryCount++;
-                _logger.Trace($"加载一级分类: {category.Name} (ID={category.Id})");
+            // 使用批量加载的数据构建UI结构
+            var categoryList = new List<FormulationCategory>();
 
-                // 加载二级分类
-                await foreach (var secondCategory in FormulationManager.GetSecondCategoriesAsync(category.Name))
+            if (categories?.Keys != null)
+                foreach (var firstCategory in categories.Keys)
                 {
-                    secondCategoryCount++;
-                    _logger.Trace($"加载二级分类: {secondCategory.Name} (ID={secondCategory.Id}, 父分类={category.Name})");
+                    categoryCount++;
+                    _logger.Trace($"加载一级分类: {firstCategory}");
 
-                    await dispatcherQueue.EnqueueAsync(() => SecondCategories.Add(secondCategory));
+                    // 创建一级分类节点
+                    var firstCategoryNode = new FormulationCategory(-categoryCount, firstCategory, true);
 
-                    // 加载方剂
-                    await foreach (var formulation in FormulationManager.GetFormulationsAsync(secondCategory.Id))
+                    // 添加二级分类
+                    foreach (var secondCategory in categories[firstCategory])
                     {
-                        formulationCount++;
-                        _logger.Trace($"加载方剂: {formulation.Name} (ID={formulation.Id}, 分类={secondCategory.Name})");
+                        secondCategoryCount++;
+                        _logger.Trace($"加载二级分类: {secondCategory.Name} (ID={secondCategory.Id})");
 
-                        secondCategory.Children.Add(formulation);
-                        await dispatcherQueue.EnqueueAsync(() =>
+                        await dispatcherQueue.EnqueueAsync(() => SecondCategories.Add(secondCategory));
+
+                        // 获取该分类下的所有方剂
+                        if (formulations!.TryGetValue(secondCategory.Id, out var categoryFormulations))
                         {
-                            SearchWords.Add(formulation.Name);
-                            SearchDictionary[formulation.Name] = formulation;
-                        });
+                            foreach (var formulation in categoryFormulations)
+                            {
+                                formulationCount++;
+                                _logger.Trace($"加载方剂: {formulation.Name} (ID={formulation.Id})");
+
+                                secondCategory.Children.Add(formulation);
+                                await dispatcherQueue.EnqueueAsync(() =>
+                                {
+                                    SearchWords.Add(formulation.Name);
+                                    SearchDictionary[formulation.Name] = formulation;
+                                });
+                            }
+                        }
+
+                        firstCategoryNode.Children.Add(secondCategory);
                     }
 
-                    category.Children.Add(secondCategory);
+                    categoryList.Add(firstCategoryNode);
                 }
 
-                await dispatcherQueue.EnqueueAsync(() => Categories.Add(category));
-            }
+            // 更新UI
+            await dispatcherQueue.EnqueueAsync(() =>
+            {
+                foreach (var category in categoryList)
+                {
+                    Categories.Add(category);
+                }
+            });
 
             stopwatch.Stop();
             _logger.Info($"分类数据加载完成: {categoryCount} 个一级分类, {secondCategoryCount} 个二级分类, {formulationCount} 个方剂, 耗时 {stopwatch.ElapsedMilliseconds} ms");
@@ -183,9 +215,25 @@ public partial class FormulationViewModel : ObservableObject
                 return;
             }
 
-            // 获取方剂详情
-            _logger.Debug($"开始加载方剂详情: ID={value.Id}");
-            var formulation = await FormulationManager.GetFormulationByIdAsync(value.Id);
+            // 尝试从缓存获取方剂详情
+            Formulation? formulation;
+            if (_formulationCache.TryGetValue(value.Id, out var cachedFormulation))
+            {
+                _logger.Debug($"从缓存获取方剂详情: ID={value.Id}");
+                formulation = cachedFormulation;
+            }
+            else
+            {
+                // 获取方剂详情
+                _logger.Debug($"开始加载方剂详情: ID={value.Id}");
+                formulation = await FormulationManager.GetFormulationByIdAsync(value.Id);
+
+                // 添加到缓存
+                if (formulation != null)
+                {
+                    _formulationCache[value.Id] = formulation;
+                }
+            }
 
             // 检查是否需要设置标志
             if ((formulation != null && LastSelectedFormulation != null &&
@@ -209,29 +257,18 @@ public partial class FormulationViewModel : ObservableObject
             SelectedFormulaChanged?.Invoke(this, new RoutedEventArgs());
             _logger.Debug($@"触发{typeof(FormulationViewModel).FullName}.SelectedFormulaChanged事件");
 
-            // 加载方剂组成
+            // 并行加载方剂组成和图片
             if (SelectedFormulation != null)
             {
-                _logger.Debug($"开始加载方剂组成: 方剂ID={value.Id}");
-                // 清空现有组成
-                SelectedFormulation.Compositions?.Clear();
+                var compositionTask = LoadFormulationCompositionsAsync(value.Id);
+                var imageTask = LoadFormulationImageAsync(value.Id);
 
-                var compositionCount = 0;
-                // 重新加载组成
-                await foreach (var composition in FormulationManager.GetFormulationCompositionsAsync(value.Id))
-                {
-                    compositionCount++;
-                    _logger.Trace($"加载方剂组成: {composition.DrugName} (ID={composition.Id})");
-                    SelectedFormulation.Compositions?.Add(composition);
-                }
+                // 等待组成加载完成
+                await compositionTask;
 
-                _logger.Debug($"方剂组成加载完成，共{compositionCount}个组成");
-
-                // 加载图片并触发事件
-                _logger.Debug($"开始加载方剂图片: 方剂ID={value.Id}");
-                SelectedFormulation.FormulationImage = (await FormulationManager.GetFormulationImageAsync(value.Id))!;
+                // 等待图片加载完成并触发事件
+                await imageTask;
                 _logger.Debug("方剂图片加载完成");
-
                 FormulaImageChanged?.Invoke(this, new RoutedEventArgs());
                 _logger.Debug($"触发{typeof(FormulationViewModel).FullName}.FormulaImageChanged事件");
             }
@@ -252,6 +289,73 @@ public partial class FormulationViewModel : ObservableObject
         finally
         {
             _isUpdatingFromCategoryChange = false;
+        }
+    }
+
+    /// <summary>
+    /// 加载方剂组成 - 优化版
+    /// </summary>
+    private async Task LoadFormulationCompositionsAsync(int formulationId)
+    {
+        _logger.Debug($"开始加载方剂组成: 方剂ID={formulationId}");
+
+        try
+        {
+            if (SelectedFormulation != null)
+            {
+                // 清空现有组成
+                SelectedFormulation.Compositions?.Clear();
+
+                var compositionCount = 0;
+                // 重新加载组成
+                await foreach (var composition in FormulationManager.GetFormulationCompositionsAsync(formulationId))
+                {
+                    compositionCount++;
+                    _logger.Trace($"加载方剂组成: {composition.DrugName} (ID={composition.Id})");
+                    SelectedFormulation.Compositions?.Add(composition);
+                }
+
+                _logger.Debug($"方剂组成加载完成，共{compositionCount}个组成");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"加载方剂组成失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 加载方剂图片 - 优化版
+    /// </summary>
+    private async Task LoadFormulationImageAsync(int formulationId)
+    {
+        _logger.Debug($"开始加载方剂图片: 方剂ID={formulationId}");
+
+        try
+        {
+            if (SelectedFormulation != null)
+            {
+                // 尝试从缓存获取图片
+                if (_imageCache.TryGetValue(formulationId, out var cachedImage))
+                {
+                    _logger.Debug($"从缓存获取方剂图片: ID={formulationId}");
+                    SelectedFormulation.FormulationImage = cachedImage;
+                }
+                else
+                {
+                    // 加载并缓存图片
+                    var image = await FormulationManager.GetFormulationImageAsync(formulationId);
+                    if (image != null)
+                    {
+                        _imageCache[formulationId] = image;
+                        SelectedFormulation.FormulationImage = image;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"加载方剂图片失败: {ex.Message}", ex);
         }
     }
 
@@ -293,6 +397,9 @@ public partial class FormulationViewModel : ObservableObject
                         if (UpdateCategoryName(SelectedFormulation.Id, false, ref formulationCategory))
                         {
                             _logger.Debug("分类树中的方剂名称已更新");
+
+                            // 更新搜索字典
+                            UpdateSearchDictionary(SelectedFormulation.Id, SelectedFormulation.Name!);
                             break;
                         }
                     }
@@ -304,6 +411,12 @@ public partial class FormulationViewModel : ObservableObject
                     _ = FormulationManager.UpdateFormulationAsync(SelectedFormulation.Id,
                         ("CategoryId", newCategoryId.ToString()));
                     UpdateFormulationCategory(SelectedFormulation.Id, newCategoryId);
+
+                    // 更新缓存
+                    if (_formulationCache.TryGetValue(SelectedFormulation.Id, out var cachedFormulation))
+                    {
+                        cachedFormulation.CategoryId = newCategoryId;
+                    }
                     break;
 
                 // 更新其他属性
@@ -319,6 +432,13 @@ public partial class FormulationViewModel : ObservableObject
                     var propertyValue = SelectedFormulation.GetType().GetProperty(propertyName)?.GetValue(SelectedFormulation) as string ?? string.Empty;
                     _logger.Debug($"更新方剂属性 {propertyName}: 新值长度={propertyValue.Length}字符");
                     _ = FormulationManager.UpdateFormulationAsync(SelectedFormulation.Id, (propertyName, propertyValue));
+
+                    // 更新缓存
+                    if (_formulationCache.TryGetValue(SelectedFormulation.Id, out var cached))
+                    {
+                        var property = cached.GetType().GetProperty(propertyName);
+                        property?.SetValue(cached, propertyValue);
+                    }
                     break;
 
                 default:
@@ -332,6 +452,29 @@ public partial class FormulationViewModel : ObservableObject
         {
             _logger.Error($"更新方剂属性 {propertyName} 失败: {e.Message}", e);
             _logger.Debug($"异常堆栈: {e.StackTrace}");
+        }
+    }
+
+    /// <summary>
+    /// 更新搜索字典中的方剂名称
+    /// </summary>
+    private void UpdateSearchDictionary(int formulationId, string newName)
+    {
+        // 找到旧的键值
+        var oldKey = SearchDictionary.FirstOrDefault(x => x.Value.Id == formulationId).Key;
+        if (oldKey != null && oldKey != newName)
+        {
+            // 如果名称已经改变，更新SearchWords和SearchDictionary
+            var item = SearchDictionary[oldKey];
+            SearchDictionary.Remove(oldKey);
+            SearchDictionary[newName] = item;
+
+            // 更新搜索词
+            var index = SearchWords.IndexOf(oldKey);
+            if (index >= 0)
+            {
+                SearchWords[index] = newName;
+            }
         }
     }
 
@@ -515,7 +658,8 @@ public partial class FormulationViewModel : ObservableObject
             _logger.Debug($"方剂组成已插入数据库: ID={composition.Id}");
 
             // 添加到UI集合
-            SelectedFormulation.Compositions?.Add(composition);
+            SelectedFormulation.Compositions ??= [];
+            SelectedFormulation.Compositions.Add(composition);
             _logger.Info($"方剂组成插入成功: ID={composition.Id}, 方剂={SelectedFormulation.Name}");
         }
         catch (Exception e)
@@ -584,6 +728,9 @@ public partial class FormulationViewModel : ObservableObject
             stopwatch.Stop();
             _logger.Info($"分类删除完成，耗时{stopwatch.ElapsedMilliseconds}ms");
 
+            // 清除相关缓存
+            ClearCaches();
+
             // 重新加载数据
             if (App.MainDispatcherQueue != null)
             {
@@ -596,6 +743,15 @@ public partial class FormulationViewModel : ObservableObject
             _logger.Error($"删除分类失败: {SelectedCategory.Name} (ID={SelectedCategory.Id}), {e.Message}", e);
             _logger.Debug($"异常堆栈: {e.StackTrace}");
         }
+    }
+
+    /// <summary>
+    /// 清除所有本地缓存
+    /// </summary>
+    private void ClearCaches()
+    {
+        _formulationCache.Clear();
+        _imageCache.Clear();
     }
 
     /// <summary>
@@ -617,8 +773,12 @@ public partial class FormulationViewModel : ObservableObject
             {
                 _logger.Debug($"分类 '{category.Name}' 包含 {category.Children.Count} 个子项，开始递归删除");
 
-                // 并行删除所有子分类
-                var deleteTasks = category.Children.Select(DeleteCategoryFromDatabase);
+                // 创建删除任务列表
+                var deleteTasks = category.Children.Select(DeleteCategoryFromDatabase).ToList();
+
+                // 为每个子项创建删除任务
+
+                // 并行执行所有删除任务
                 await Task.WhenAll(deleteTasks);
                 _logger.Debug($"分类 '{category.Name}' 的所有子项已删除");
 
@@ -676,7 +836,7 @@ public partial class FormulationViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 插入新方剂
+    /// 插入新方剂 - 优化版
     /// </summary>
     private async Task InsertNewFormulation(int categoryId, string name)
     {
@@ -702,6 +862,10 @@ public partial class FormulationViewModel : ObservableObject
         // 插入到数据库
         var insertedId = await FormulationManager.InsertFormulationAsync(formulation);
         _logger.Debug($"方剂已插入数据库: ID={insertedId}, 名称='{name}'");
+
+        // 添加到缓存
+        formulation.Id = insertedId;
+        _formulationCache[insertedId] = formulation;
 
         stopwatch.Stop();
         _logger.Info($"方剂 '{name}' 插入成功，ID={insertedId}，耗时{stopwatch.ElapsedMilliseconds}ms");
@@ -731,7 +895,7 @@ public partial class FormulationViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 插入新分类
+    /// 插入新分类 - 优化版
     /// </summary>
     private async Task InsertNewCategory(string firstCategory, string secondCategory)
     {

@@ -193,7 +193,7 @@ public partial class SqliteConnectionPool : IDisposable
             // 移除超时连接
             while (_availableConnections.TryTake(out var pooledConn))
             {
-                if ((currentTime - pooledConn.CreationTime) > _connectionTimeout)
+                if (currentTime - pooledConn.CreationTime > _connectionTimeout)
                 {
                     SafeDisposeConnection(pooledConn.Connection);
                 }
