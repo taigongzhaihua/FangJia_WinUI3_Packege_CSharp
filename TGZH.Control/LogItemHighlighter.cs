@@ -460,10 +460,7 @@ public partial class LogItemHighlighter
     // 高亮包含命名空间的内容
     private void HighlightNameContent(Paragraph paragraph, string content)
     {
-        // 命名空间和类型模式
-        var namespacePattern = @"([A-Za-z0-9]+)\.([A-Za-z0-9\.]+)";
-
-        var match = Regex.Match(content, namespacePattern);
+        var match = ClassNameRegex().Match(content);
         if (match.Success)
         {
             // 分解命名空间和类型
@@ -941,32 +938,32 @@ public partial class LogItemHighlighter
             switch (parts.Length)
             {
                 case > 0 when !string.IsNullOrWhiteSpace(parts[0]):
-                {
-                    // 处理Logger部分
-                    HighlightLogger(paragraph, parts[0]);
+                    {
+                        // 处理Logger部分
+                        HighlightLogger(paragraph, parts[0]);
 
-                    if (parts.Length <= 1) return paragraph;
-                    // 添加制表符和冒号
-                    paragraph.Inlines.Add(new Run { Text = "\t：" });
+                        if (parts.Length <= 1) return paragraph;
+                        // 添加制表符和冒号
+                        paragraph.Inlines.Add(new Run { Text = "\t：" });
 
-                    // 处理消息部分
-                    HighlightMessageContent(paragraph, parts[1]);
-                    break;
-                }
+                        // 处理消息部分
+                        HighlightMessageContent(paragraph, parts[1]);
+                        break;
+                    }
                 case > 1:
                     // 直接处理消息部分
                     HighlightMessageContent(paragraph, parts[1]);
                     break;
                 default:
-                {
-                    if (!string.IsNullOrWhiteSpace(logText))
                     {
-                        // 处理剩余文本
-                        HighlightMessageContent(paragraph, logText);
-                    }
+                        if (!string.IsNullOrWhiteSpace(logText))
+                        {
+                            // 处理剩余文本
+                            HighlightMessageContent(paragraph, logText);
+                        }
 
-                    break;
-                }
+                        break;
+                    }
             }
 
             return paragraph;
@@ -1025,6 +1022,8 @@ public partial class LogItemHighlighter
     // 4. 路径头部
     [GeneratedRegex(@"^[A-Za-z]:\\")]
     private static partial Regex PathHeadRegex();
+    [GeneratedRegex(@"([A-Za-z0-9]+)\.([A-Za-z0-9\.]+)")]
+    private static partial Regex ClassNameRegex();
 }
 
 // 文本样式类
