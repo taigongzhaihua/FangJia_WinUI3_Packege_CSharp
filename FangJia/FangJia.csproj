@@ -103,6 +103,7 @@
 		<PackageReference Include="NLog.Database" Version="5.4.0" />
 		<PackageReference Include="NLog.Extensions.Logging" Version="5.4.0" />
 		<PackageReference Include="System.Private.Uri" Version="4.3.2" />
+		<PackageReference Include="TGZH.Pinyin" Version="1.0.14" />
 		<PackageReference Include="WinUIEx" Version="2.5.1" />
 	</ItemGroup>
 	<ItemGroup>

@@ -31,8 +31,6 @@
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="common:Category">
                     <controls:SettingsCard Width="450"
-                                           Background="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
-                                           BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                                            Description="{x:Bind Tooltip}"
                                            Header="{x:Bind Name}"
                                            IsClickEnabled="True"
