@@ -81,7 +81,7 @@
                    Margin="16,0,4,0"
                    VerticalAlignment="Center">
                 <Image.Source>
-                    <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.svg" />
+                    <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.scale-100.png" />
                 </Image.Source>
             </Image>
 

@@ -43,7 +43,7 @@
                            Margin="24,32,24,24"
                            VerticalAlignment="Top">
                         <Image.Source>
-                            <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.svg" 
+                            <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.scale-100.png" 
                                             RasterizePixelWidth="120" RasterizePixelHeight="120"/>
                         </Image.Source>
                     </Image>
