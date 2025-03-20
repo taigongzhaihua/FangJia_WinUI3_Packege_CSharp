@@ -256,8 +256,7 @@
                     <ScrollViewer Canvas.ZIndex="1" x:Name="Viewer"
                                   HorizontalAlignment="Stretch"
                                   CornerRadius="4,4,0,0" BorderThickness="0"
-                                  Background="{ThemeResource ControlFillColorDefaultBrush}"
-                                  winUi:Effects.Shadow="{StaticResource ViewerShadow}"
+                                  Background="{ThemeResource ControlFillColorTransparentBrush}"
                                   Margin="20,8,20,0" Padding="16" 
                                   Visibility="{x:Bind ViewModel.IsDrugSelected,Mode=OneWay,Converter={StaticResource BooleanToVisibilityConverter}}">
                         <ScrollViewer.Transitions>
