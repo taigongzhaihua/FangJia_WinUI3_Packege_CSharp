@@ -35,6 +35,7 @@ namespace FangJia.Pages;
 public sealed partial class FormulationPage
 {
     internal readonly FormulationViewModel ViewModel = Locator.GetService<FormulationViewModel>();
+    internal readonly DrugViewModel DrugViewModel = Locator.GetService<DrugViewModel>();
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 
@@ -70,6 +71,11 @@ public sealed partial class FormulationPage
         // 移除: _animationCache.Clear();
     }
 
+    ~FormulationPage()
+    {
+        Loaded -= Page_Loaded;
+        Unloaded -= Page_Unloaded;
+    }
     #region 动画处理
 
     /// <summary>

@@ -136,7 +136,7 @@ public static class ThemeHelper
             {
                 window!.SystemBackdrop = new MicaBackdrop
                 {
-                    Kind = MicaKind.BaseAlt
+                    Kind = MicaKind.Base
                 };
                 panel!.Background = new SolidColorBrush(Colors.Transparent);
             }

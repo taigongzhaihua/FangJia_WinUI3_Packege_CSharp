@@ -53,7 +53,7 @@
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PaneGrid"
                                                        Storyboard.TargetProperty="Padding">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="0" />
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="16,0,0,0" />
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Border"
                                                        Storyboard.TargetProperty="Fill">
@@ -62,7 +62,7 @@
                         </ObjectAnimationUsingKeyFrames>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Viewer"
                                                        Storyboard.TargetProperty="Margin">
-                            <DiscreteObjectKeyFrame KeyTime="0" Value="20,8,20,0" />
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="8,8,16,0" />
                         </ObjectAnimationUsingKeyFrames>
                     </Storyboard>
                 </VisualState>
@@ -105,7 +105,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <Button Width="36" Height="30"
-                VerticalAlignment="Top" HorizontalAlignment="Right"
+                VerticalAlignment="Top" HorizontalAlignment="Left"
                 x:Name="PaneOpenOrCloseButton"
                 Click="PaneOpenOrCloseButton_OnClick"
                 Canvas.ZIndex="2"
@@ -157,92 +157,92 @@
                 </AnimatedIcon.FallbackIconSource>
             </AnimatedIcon>
         </Button>
-        <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Right"
+        <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline" PanePlacement="Left"
                    PaneBackground="{ThemeResource ControlFillColorTransparentBrush}">
             <SplitView.Pane>
                 <Grid winUi:UIElementExtensions.ClipToBounds="False" Padding="8,8,8,8">
                     <Rectangle x:Name="Border" Fill="{ThemeResource ControlFillColorTransparentBrush}"
                                RadiusX="8" RadiusY="8" />
-                        <Grid x:Name="PaneGrid">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <Grid.Resources>
-                                <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
-                                <ResourceDictionary>
-                                    <ResourceDictionary.ThemeDictionaries>
-                                        <ResourceDictionary x:Key="Default">
-                                            <StaticResource x:Key="ButtonBackground"
-                                                            ResourceKey="ControlFillColorTransparentBrush" />
-                                        </ResourceDictionary>
-                                        <ResourceDictionary x:Key="HighContrast">
-                                            <StaticResource x:Key="ButtonBackground"
-                                                            ResourceKey="SystemControlBackgroundBaseLowBrush" />
-                                        </ResourceDictionary>
-                                        <ResourceDictionary x:Key="Light">
-                                            <StaticResource x:Key="ButtonBackground"
-                                                            ResourceKey="ControlFillColorTransparentBrush" />
-                                        </ResourceDictionary>
-                                        <ResourceDictionary x:Key="Dark">
-                                            <StaticResource x:Key="ButtonBackground"
-                                                            ResourceKey="ControlFillColorTransparentBrush" />
-                                        </ResourceDictionary>
-                                    </ResourceDictionary.ThemeDictionaries>
-                                </ResourceDictionary>
-                                <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
-                            </Grid.Resources>
-                            <AutoSuggestBox x:Name="SearchBox"
-                                            Grid.Row="0" Grid.Column="0"
-                                            VerticalAlignment="Center" HorizontalAlignment="Stretch"
-                                            x:FieldModifier="public"
-                                            KeyboardAcceleratorPlacementMode="Hidden" PlaceholderText="搜索"
-                                            QueryIcon="Find"
-                                            TextChanged="SearchBox_OnTextChanged"
-                                            SuggestionChosen="SearchBox_OnSuggestionChosen"
-                                            QuerySubmitted="SearchBox_OnQuerySubmitted">
-                                <AutoSuggestBox.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="S" Modifiers="Control" />
-                                </AutoSuggestBox.KeyboardAccelerators>
-                            </AutoSuggestBox>
-                            <Button Grid.Row="0" Grid.Column="1"
-                                    Click="CategoryInsertButton_OnClick"
-                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
-                                    Padding="4" Margin="4,4,2,4"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="新增" HorizontalAlignment="Right">
-                                <FontIcon Glyph="&#xE710;" FontSize="16" />
-                            </Button>
-                            <Button Grid.Row="0" Grid.Column="2"
-                                    Click="CategoryDeleteButton_OnClick"
-                                    BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
-                                    Padding="4" Margin="2,4,8,4"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="删除" HorizontalAlignment="Right">
-                                <FontIcon Glyph="&#xE738;" FontSize="16" />
-                            </Button>
-                            <TreeView x:Name="FormulationCategoryTree"
-                                      Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                      Padding="10" Margin="10"
-                                      CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
-                                      SelectionMode="Single"
-                                      SelectionChanged="TreeView_OnSelectionChanged"
-                                      BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
-                                      SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}"
-                                      ItemTemplateSelector="{StaticResource CategoryItemTemplateSelector}">
-                                <TreeView.Resources>
-                                    <!-- ReSharper disable Xaml.RedundantResource -->
-                                    <Thickness x:Key="TreeViewItemPresenterMargin">8,3,16,3</Thickness>
-                                    <!-- ReSharper restore Xaml.RedundantResource -->
-                                </TreeView.Resources>
-                            </TreeView>
-                        </Grid>
-                    
+                    <Grid x:Name="PaneGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.Resources>
+                            <!-- ReSharper disable Xaml.StaticResourceNotResolved -->
+                            <ResourceDictionary>
+                                <ResourceDictionary.ThemeDictionaries>
+                                    <ResourceDictionary x:Key="Default">
+                                        <StaticResource x:Key="ButtonBackground"
+                                                        ResourceKey="ControlFillColorTransparentBrush" />
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="HighContrast">
+                                        <StaticResource x:Key="ButtonBackground"
+                                                        ResourceKey="SystemControlBackgroundBaseLowBrush" />
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="Light">
+                                        <StaticResource x:Key="ButtonBackground"
+                                                        ResourceKey="ControlFillColorTransparentBrush" />
+                                    </ResourceDictionary>
+                                    <ResourceDictionary x:Key="Dark">
+                                        <StaticResource x:Key="ButtonBackground"
+                                                        ResourceKey="ControlFillColorTransparentBrush" />
+                                    </ResourceDictionary>
+                                </ResourceDictionary.ThemeDictionaries>
+                            </ResourceDictionary>
+                            <!-- ReSharper restore Xaml.StaticResourceNotResolved -->
+                        </Grid.Resources>
+                        <AutoSuggestBox x:Name="SearchBox"
+                                        Grid.Row="0" Grid.Column="0"
+                                        VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                        x:FieldModifier="public"
+                                        KeyboardAcceleratorPlacementMode="Hidden" PlaceholderText="搜索"
+                                        QueryIcon="Find"
+                                        TextChanged="SearchBox_OnTextChanged"
+                                        SuggestionChosen="SearchBox_OnSuggestionChosen"
+                                        QuerySubmitted="SearchBox_OnQuerySubmitted">
+                            <AutoSuggestBox.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="S" Modifiers="Control" />
+                            </AutoSuggestBox.KeyboardAccelerators>
+                        </AutoSuggestBox>
+                        <Button Grid.Row="0" Grid.Column="1"
+                                Click="CategoryInsertButton_OnClick"
+                                BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                Padding="4" Margin="4,4,2,4"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="新增" HorizontalAlignment="Right">
+                            <FontIcon Glyph="&#xE710;" FontSize="16" />
+                        </Button>
+                        <Button Grid.Row="0" Grid.Column="2"
+                                Click="CategoryDeleteButton_OnClick"
+                                BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                Padding="4" Margin="2,4,8,4"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="删除" HorizontalAlignment="Right">
+                            <FontIcon Glyph="&#xE738;" FontSize="16" />
+                        </Button>
+                        <TreeView x:Name="FormulationCategoryTree"
+                                  Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                  Padding="10" Margin="10"
+                                  CornerRadius="16" ItemsSource="{x:Bind ViewModel.Categories,Mode=TwoWay}"
+                                  SelectionMode="Single"
+                                  SelectionChanged="TreeView_OnSelectionChanged"
+                                  BorderBrush="{ThemeResource ControlFillColorTransparentBrush}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedCategory,Mode=TwoWay}"
+                                  ItemTemplateSelector="{StaticResource CategoryItemTemplateSelector}">
+                            <TreeView.Resources>
+                                <!-- ReSharper disable Xaml.RedundantResource -->
+                                <Thickness x:Key="TreeViewItemPresenterMargin">8,3,16,3</Thickness>
+                                <!-- ReSharper restore Xaml.RedundantResource -->
+                            </TreeView.Resources>
+                        </TreeView>
+                    </Grid>
+
                 </Grid>
             </SplitView.Pane>
             <SplitView.Content>
@@ -336,9 +336,6 @@
                                                 SelectionMode="Single"
                                                 CellEditEnding="DataGrid_CellEditEnding">
                                 <!-- ReSharper restore UnusedMember.Local -->
-
-
-
                                 <!-- 使用共享样式的列定义 -->
                                 <controls1:DataGrid.Columns>
                                     <controls1:DataGridTextColumn Header="君臣佐使"

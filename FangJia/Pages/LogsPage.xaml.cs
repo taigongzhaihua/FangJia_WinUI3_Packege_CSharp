@@ -391,23 +391,21 @@ public sealed partial class LogsPage
     private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         // 只有当用户输入导致文本变更时才处理
-        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-        {
-            // 可以在这里根据输入提供搜索建议
-            // 例如: 常用搜索词、历史搜索记录等
-            var suggestions = new List<string>();
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        // 可以在这里根据输入提供搜索建议
+        // 例如: 常用搜索词、历史搜索记录等
+        var suggestions = new List<string>();
 
-            // 示例：根据常见日志内容提供建议
-            var inputText = sender.Text.ToLower();
-            if ("error".Contains(inputText)) suggestions.Add("error");
-            if ("warning".Contains(inputText)) suggestions.Add("warning");
-            if ("exception".Contains(inputText)) suggestions.Add("exception");
-            if ("failed".Contains(inputText)) suggestions.Add("failed");
-            if (CurrentUser.Contains(inputText, StringComparison.CurrentCultureIgnoreCase)) suggestions.Add(CurrentUser);
+        // 示例：根据常见日志内容提供建议
+        var inputText = sender.Text.ToLower();
+        if ("error".Contains(inputText)) suggestions.Add("error");
+        if ("warning".Contains(inputText)) suggestions.Add("warning");
+        if ("exception".Contains(inputText)) suggestions.Add("exception");
+        if ("failed".Contains(inputText)) suggestions.Add("failed");
+        if (CurrentUser.Contains(inputText, StringComparison.CurrentCultureIgnoreCase)) suggestions.Add(CurrentUser);
 
-            // 更新搜索建议
-            sender.ItemsSource = suggestions;
-        }
+        // 更新搜索建议
+        sender.ItemsSource = suggestions;
     }
 
     /// <summary>

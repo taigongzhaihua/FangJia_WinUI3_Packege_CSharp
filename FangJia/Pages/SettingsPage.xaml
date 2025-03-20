@@ -17,7 +17,7 @@
                        Style="{ThemeResource SubtitleTextBlockStyle}"
                        Margin="0,12"/>
             <controls:SettingsCard Description="选择应用主题" Header="应用主题"
-                                   CornerRadius="8,8,0,0">
+                                   CornerRadius="4,4,0,0">
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE790;" />
                 </controls:SettingsCard.HeaderIcon>
@@ -32,7 +32,7 @@
                     <ComboBoxItem Content="跟随系统" Tag="Default" />
                 </ComboBox>
             </controls:SettingsCard>
-            <controls:SettingsCard CornerRadius="0,0,8,8"
+            <controls:SettingsCard CornerRadius="0,0,4,4"
                                    Description="选择是否启用Mica效果" Header="启用Mica"
                                    >
                 <controls:SettingsCard.HeaderIcon>
@@ -41,7 +41,7 @@
                 <ToggleSwitch IsOn="{x:Bind ViewModel.IsMicaTheme,Mode=TwoWay}"/>
             </controls:SettingsCard>
             <TextBlock Text="日志" Margin="0,12" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-            <controls:SettingsCard CornerRadius="8,8,0,0"
+            <controls:SettingsCard CornerRadius="4,4,0,0"
                                    Description="选择日志记录的级别，默认为日常" Header="日志级别"
                                    IsActionIconVisible="False"
                                    IsClickEnabled="False">
@@ -56,7 +56,7 @@
                     <ComboBoxItem Content="警告" Tag="Warn" />
                 </ComboBox>
             </controls:SettingsCard>
-            <controls:SettingsCard CornerRadius="0,0,8,8"
+            <controls:SettingsCard CornerRadius="0,0,4,4"
                                    Description="查看日志详情" Header="日志详情"
                                    IsActionIconVisible="True"
                                    IsClickEnabled="True"
@@ -67,7 +67,7 @@
                 </controls:SettingsCard.HeaderIcon>
             </controls:SettingsCard>
             <TextBlock Text="应用" Margin="0,12" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-            <controls:SettingsCard CornerRadius="8,8,0,0"
+            <controls:SettingsCard CornerRadius="4,4,0,0"
                                    Header="关闭选项" Description="选择点击关闭后执行的动作">
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE7E8;" />
@@ -82,7 +82,7 @@
                     <ComboBoxItem Content="每次询问" Tag="Default" />
                 </ComboBox>
             </controls:SettingsCard>
-            <controls:SettingsCard CornerRadius="0,0,8,8"
+            <controls:SettingsCard CornerRadius="0,0,4,4"
                                    Description="重新启动应用" Header="重启应用"
                                    IsActionIconVisible="False"
                                    IsClickEnabled="True"

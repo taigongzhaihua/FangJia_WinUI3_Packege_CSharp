@@ -32,7 +32,7 @@ public partial class DrugViewModel : ObservableObject
     [ObservableProperty] public partial Drug? SelectedDrug { get; set; }
     [ObservableProperty] public partial ObservableCollection<string>? SearchTexts { get; set; } = [];
 
-    private readonly List<DrugSummary>? _drugSummaries = [];
+    [ObservableProperty] public partial List<DrugSummary>? DrugSummaries { get; set; } = [];
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -61,10 +61,10 @@ public partial class DrugViewModel : ObservableObject
 
     private async Task LoadDrugSummaryListAsync()
     {
-        _drugSummaries?.Clear();
+        DrugSummaries?.Clear();
         await foreach (var ds in DrugManager.GetDrugSummaryListAsync())
         {
-            _drugSummaries?.Add(ds);
+            DrugSummaries?.Add(ds);
         }
 
         UpdateDrugGroups();
@@ -75,7 +75,7 @@ public partial class DrugViewModel : ObservableObject
     {
         // 分组
         var groupedSummaries =
-            from ds in _drugSummaries
+            from ds in DrugSummaries
 
                 // 根据 Category 分组
             group ds by ds.Category
@@ -94,7 +94,7 @@ public partial class DrugViewModel : ObservableObject
     /// </summary>
     private async Task BuildSearchIndexesAsync()
     {
-        if (_indexesBuilt || _drugSummaries == null) return;
+        if (_indexesBuilt || DrugSummaries == null) return;
 
         try
         {
@@ -103,11 +103,11 @@ public partial class DrugViewModel : ObservableObject
 
             var errorCount = 0;
             // 一次批量获取拼音和首字母，以提高性能
-            var drugNameList = _drugSummaries.Select(ds => ds.Name).ToArray();
+            var drugNameList = DrugSummaries.Select(ds => ds.Name).ToArray();
             var pinyinList = await UnifiedPinyinApi.GetWordsPinyinBatchAsync(drugNameList, PinyinFormat.WithoutTone);
             var initialList = await UnifiedPinyinApi.GetWordsPinyinBatchAsync(drugNameList, PinyinFormat.FirstLetter);
             // 将拼音列表添加到缓存字典
-            foreach (var drug in _drugSummaries)
+            foreach (var drug in DrugSummaries)
             {
                 var pinyin = pinyinList[drug.Name!];
                 var initials = initialList[drug.Name!];
@@ -158,7 +158,7 @@ public partial class DrugViewModel : ObservableObject
             return;
         }
 
-        if (_drugSummaries == null) return;
+        if (DrugSummaries == null) return;
 
         // 如果索引尚未构建，先构建索引
         if (!_indexesBuilt)
@@ -170,7 +170,7 @@ public partial class DrugViewModel : ObservableObject
         var lowerSearchText = searchText.ToLower();
 
         // 使用预计算的索引进行高效搜索
-        foreach (var drug in _drugSummaries)
+        foreach (var drug in DrugSummaries)
         {
             if (drug.Name == null) continue;
 
@@ -232,7 +232,7 @@ public partial class DrugViewModel : ObservableObject
 
     public void SelectDrug(string drugName)
     {
-        SelectedDrugSummary = _drugSummaries?.FirstOrDefault(ds => ds.Name == drugName);
+        SelectedDrugSummary = DrugSummaries?.FirstOrDefault(ds => ds.Name == drugName);
     }
 
     [RelayCommand]
@@ -246,7 +246,7 @@ public partial class DrugViewModel : ObservableObject
         if (k == "Category")
         {
             await LoadDrugSummaryListAsync();
-            SelectedDrugSummary = _drugSummaries?.FirstOrDefault(ds => ds.Id == id);
+            SelectedDrugSummary = DrugSummaries?.FirstOrDefault(ds => ds.Id == id);
         }
     }
 
@@ -265,7 +265,7 @@ public partial class DrugViewModel : ObservableObject
         if (SelectedDrug == null) return;
         var id = SelectedDrug.Id;
         await DrugManager.DeleteDrugAsync(id);
-        _drugSummaries?.Remove(_drugSummaries.FirstOrDefault(ds => ds.Id == id)!);
+        DrugSummaries?.Remove(DrugSummaries.FirstOrDefault(ds => ds.Id == id)!);
         UpdateDrugGroups();
         SelectedDrug = null;
         IsDrugSelected = false;
@@ -291,9 +291,9 @@ public partial class DrugViewModel : ObservableObject
             Source = "未知"
         };
         drug.Id = await DrugManager.InsertDrugAsync(drug);
-        _drugSummaries?.Add(drug);
+        DrugSummaries?.Add(drug);
         UpdateDrugGroups();
-        SelectedDrugSummary = _drugSummaries?.FirstOrDefault(ds => ds.Id == drug.Id);
+        SelectedDrugSummary = DrugSummaries?.FirstOrDefault(ds => ds.Id == drug.Id);
         IsDrugSelected = true;
     }
 }

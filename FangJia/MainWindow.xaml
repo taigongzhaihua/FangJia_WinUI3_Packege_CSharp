@@ -78,7 +78,7 @@
 
                    Grid.Column="1"
                    Height="24"
-                   Margin="8,0,4,0"
+                   Margin="16,0,4,0"
                    VerticalAlignment="Center">
                 <Image.Source>
                     <SvgImageSource UriSource="ms-appx:///Assets/StoreLogo.svg" />
@@ -129,14 +129,14 @@
                 <!-- ReSharper disable Xaml.RedundantResource -->
 
                 <!--  This top margin is the height of the custom titleBar  -->
-                <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
+                <Thickness x:Key="NavigationViewContentMargin">0,0,0,0</Thickness>
                 <Thickness x:Key="NavigationViewMinimalContentMargin">0,48,0,0</Thickness>
                 <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,0,0</Thickness>
-                <Thickness x:Key="NavigationViewHeaderMargin">24,32,0,12</Thickness>
+                <Thickness x:Key="NavigationViewHeaderMargin">24,60,0,12</Thickness>
                 <Thickness x:Key="NavigationViewMinimalHeaderMargin">-48,32,0,12</Thickness>
 
                 <!--  This is the rounded corner on the Top left of the L Pattern  -->
-                <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,0</CornerRadius>
+                <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,8</CornerRadius>
                 <!-- ReSharper restore Xaml.RedundantResource -->
             </NavigationView.Resources>
             <NavigationView.AutoSuggestBox>
