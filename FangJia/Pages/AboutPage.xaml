@@ -40,7 +40,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Image Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
-                           Source="ms-appx:///Assets/StoreLogo.scale-200.png"
+                           Source="ms-appx:///Assets/StoreLogo.scale-400.png"
                            Margin="24,32,24,24"
                            VerticalAlignment="Top"
                            Width="120" 

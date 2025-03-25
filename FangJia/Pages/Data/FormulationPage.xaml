@@ -259,7 +259,7 @@
                             </TransitionCollection>
                         </ScrollViewer.Transitions>
                         <Grid Padding="0,0,0,30"
-                              MaxWidth="760" MinWidth="525">
+                              MaxWidth="690" MinWidth="525">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*" MaxWidth="380" />
                                 <ColumnDefinition Width="*" />

@@ -266,7 +266,7 @@
                         </ScrollViewer.Transitions>
 
                         <Grid Padding="0,0,0,30"
-                              MaxWidth="760" MinWidth="525"
+                              MaxWidth="690" MinWidth="525"
                               HorizontalAlignment="Center">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="3*" MaxWidth="380"/>

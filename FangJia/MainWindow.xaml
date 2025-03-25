@@ -75,15 +75,15 @@
             </Grid.ColumnDefinitions>
 
             <Image x:Name="TitleBarIcon"
-                   Source="ms-appx:///Assets/StoreLogo.scale-100.png"
+                   Source="ms-appx:///Assets/StoreLogo.png"
                    Grid.Column="1"
-                   Height="24"
+                   Height="18"
                    Margin="16,0,4,0"
                    VerticalAlignment="Center"/>
 
             <TextBlock x:Name="TitleBarTextBlock"
                        Text="App title"
-                       FontSize="16"
+                       FontSize="14"
                        FontWeight="Medium"
                        Margin="8,0,0,0"
                        Grid.Column="2"
